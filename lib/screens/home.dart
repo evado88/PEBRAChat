@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kitchen/screens/discussions.dart';
+import 'package:kitchen/screens/profile.dart';
 import 'package:kitchen/screens/resources.dart';
 import 'package:kitchen/utils/assist.dart';
 
@@ -15,8 +16,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final DiscussionPage _discussionPage =
-      const DiscussionPage(title: 'Discussions');
+  final DiscussionsPage _discussionPage =
+      const DiscussionsPage(title: 'Discussions');
+      
   final ResourcePage _resourcePage = const ResourcePage(title: 'Resources');
 
   ListTile _tile(BuildContext context, int index, String title, String subtitle,
@@ -40,9 +42,11 @@ class _HomePageState extends State<HomePage> {
         if (index >= 2 && index <= 4) {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const HomePage(title: Assist.appName),
+              builder: (context) => const ProfilePage(title: Assist.appName),
             ),
           );
+        }else if(index==6){
+          Assist.removeUser();
         }
       },
     );

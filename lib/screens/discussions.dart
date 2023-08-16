@@ -2,9 +2,12 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:kitchen/screens/add_discussion.dart';
+import 'package:kitchen/screens/discussion.dart';
 
-class DiscussionPage extends StatefulWidget {
-  const DiscussionPage({super.key, required this.title});
+import '../utils/Assist.dart';
+
+class DiscussionsPage extends StatefulWidget {
+  const DiscussionsPage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -18,10 +21,10 @@ class DiscussionPage extends StatefulWidget {
   final String title;
 
   @override
-  State<DiscussionPage> createState() => _DiscussionPageState();
+  State<DiscussionsPage> createState() => _DiscussionsPageState();
 }
 
-class _DiscussionPageState extends State<DiscussionPage> {
+class _DiscussionsPageState extends State<DiscussionsPage> {
   // Setting reference to 'tasks' collection
   final Stream<QuerySnapshot> _usersStream =
       FirebaseFirestore.instance.collection('twyshe-discussions').snapshots();
@@ -58,7 +61,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
                     subtitle: Text('${data['posts'].toString()} Posts'),
                     onTap: () {
                       String make = data['title'] as String;
-                      String year = data['posts'] as String;
+                      int year = data['posts'] as int;
 
                       ScaffoldMessenger.of(context)
                         ..removeCurrentSnackBar()
@@ -67,6 +70,13 @@ class _DiscussionPageState extends State<DiscussionPage> {
                               content: Text(
                                   "You tapped on car with make $make and year $year")),
                         );
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const DiscussionPage(),
+                        ),
+                      );
                     },
                   );
                 })

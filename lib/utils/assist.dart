@@ -123,7 +123,7 @@ class Assist {
 
   ///Gets the hex code for the color
   static String getColorHex(Color color) {
-    var hex = '#${color.value.toRadixString(16)}';
+    var hex = '#${color.value.toRadixString(16).padLeft(6, '0')}';
     return hex;
   }
 }

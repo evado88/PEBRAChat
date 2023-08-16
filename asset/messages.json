@@ -1,0 +1,120 @@
+[
+  {
+    "author": {
+      "firstName": "Matthew",
+      "id": "82091008-a484-4a89-ae75-a22bf8d6f3ac",
+      "lastName": "White"
+    },
+    "createdAt": 1655648401000,
+    "id": "64747b28-df19-4a0c-8c47-316dc3546e3c",
+    "status": "seen",
+    "text": "Thank you so much! 🥰",
+    "type": "text"
+  },
+  {
+    "author": {
+      "firstName": "Janice",
+      "id": "e52552f4-835d-4dbe-ba77-b076e659774d",
+      "imageUrl": "https://i.pravatar.cc/300?u=e52552f4-835d-4dbe-ba77-b076e659774d",
+      "lastName": "King"
+    },
+    "createdAt": 1655648403000,
+    "height": 1280,
+    "id": "02797655-4d73-402e-a319-50fde79e2bc4",
+    "name": "madrid",
+    "size": 585000,
+    "status": "seen",
+    "type": "image",
+    "uri": "https://upload.wikimedia.org/wikipedia/commons/8/84/University_Teaching_Hospital.jpg",
+    "width": 1920
+  },
+  {
+    "author": {
+      "firstName": "Peer",
+      "id": "e52552f4-835d-4dbe-ba77-b076e659774d",
+      "imageUrl": "https://i.pravatar.cc/300?u=e52552f4-835d-4dbe-ba77-b076e659774d",
+      "lastName": "Navigator"
+    },
+    "createdAt": 1655648402000,
+    "id": "4e048753-2d60-4144-bc28-9967050aaf12",
+    "status": "seen",
+    "text": "Your next appointment will be at UTH",
+    "type": "text"
+  },
+  {
+    "author": {
+      "firstName": "Matthew",
+      "id": "82091008-a484-4a89-ae75-a22bf8d6f3ac",
+      "lastName": "White"
+    },
+    "createdAt": 1655648401000,
+    "id": "64747b28-df19-4a0c-8c47-316dc3546e3c",
+    "status": "seen",
+    "text": "I have sent my file",
+    "type": "text"
+  },
+  {
+    "author": {
+      "firstName": "Matthew",
+      "id": "82091008-a484-4a89-ae75-a22bf8d6f3ac",
+      "lastName": "White"
+    },
+    "createdAt": 1655648400000,
+    "id": "6a1a4351-cf05-4d0c-9d0f-47ed378b6112",
+    "mimeType": "application/pdf",
+    "name": "Generation-and-Management-of-Patients-Records.pdf",
+    "size": 262144,
+    "status": "seen",
+    "type": "file",
+    "uri": "http://www.hpcz.org.zm/wp-content/uploads/2018/07/Generation-and-Management-of-Patients-Records.pdf"
+  },
+  {
+    "author": {
+      "firstName": "Peer",
+      "id": "4c2307ba-3d40-442f-b1ff-b271f63904ca",
+      "lastName": "Navigator"
+    },
+    "createdAt": 1655624464000,
+    "id": "38681a33-2563-42aa-957b-cfc12f791d16",
+    "status": "seen",
+    "text": "Please share your participant file for us to to schedule a meeting with you",
+    "type": "text"
+  },
+  {
+    "author": {
+      "firstName": "Matthew",
+      "id": "82091008-a484-4a89-ae75-a22bf8d6f3ac",
+      "lastName": "White"
+    },
+    "createdAt": 1655624463000,
+    "id": "113bb2e8-f74e-42cd-aa30-4085a0f52c58",
+    "status": "seen",
+    "text": "2",
+    "type": "text"
+  },
+  {
+    "author": {
+      "firstName": "Peer",
+      "id": "e52552f4-835d-4dbe-ba77-b076e659774d",
+      "imageUrl": "https://i.pravatar.cc/300?u=e52552f4-835d-4dbe-ba77-b076e659774d",
+      "lastName": "Navigator"
+    },
+    "createdAt": 1655624461000,
+    "id": "afc2269a-374b-4382-8864-b3b60d1e8cd7",
+    "status": "seen",
+    "text": "For any other option, You can send a message with your query",
+    "type": "text"
+  },
+  {
+    "author": {
+      "firstName": "Peer",
+      "id": "4c2307ba-3d40-442f-b1ff-b271f63904ca",
+      "lastName": "Navigator"
+    },
+    "createdAt": 1655624460000,
+    "id": "634b2f0b-2486-4bfe-b36d-1c7d6313c7b3",
+    "status": "seen",
+    "text": "Welcome! Please select an option below: \n 1. Chat with a peer navigator \n 2. Schedule a meeting \n 3. Request for phone call",
+    "type": "text"
+  }
+]
