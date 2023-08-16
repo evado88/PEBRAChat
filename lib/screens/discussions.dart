@@ -63,7 +63,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
                       ..showSnackBar(
                         SnackBar(
                             content: Text(
-                                "TYou tapped on car with make $make and year $year")),
+                                "You tapped on car with make $make and year $year")),
                       );
                   },
                 );

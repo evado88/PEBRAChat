@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kitchen/screens/discussions.dart';
+import 'package:kitchen/screens/register.dart';
 import 'package:kitchen/screens/resources.dart';
 
 class HomePage extends StatefulWidget {
@@ -12,15 +13,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  
   int _selectedIndex = 0;
-  static const TextStyle optionStyle =
-      TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
 
   final DiscussionPage _discussionPage =
       const DiscussionPage(title: 'Discussions');
   final ResourcePage _resourcePage = const ResourcePage(title: 'Resources');
 
-  static ListTile _tile(String title, String subtitle, IconData icon,
+  static ListTile _tile(
+      BuildContext context, String title, String subtitle, IconData icon,
       {Color mycolor = Colors.purple}) {
     return ListTile(
       title: Text(title,
@@ -34,29 +35,39 @@ class _HomePageState extends State<HomePage> {
         color: mycolor,
         size: 48,
       ),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const RegisterPage(title: 'Register'),
+          ),
+        );
+      },
     );
   }
 
-  static ListView _getHomeContent() {
+  static ListView _getHomeContent(BuildContext context) {
     return ListView(
       children: [
-        _tile('My Peer Navigator', 'Chat with your peer navigator',
+        _tile(context, 'My Peer Navigator', 'Chat with your peer navigator',
             Icons.personal_injury),
         const Divider(),
-        _tile('Butterfly', 'Your nickname. Tap to change', Icons.face),
-        _tile('My Color', 'Your color. Tap to change', Icons.color_lens,
+        _tile(context, 'Butterfly', 'Your nickname. Tap to change', Icons.face),
+        _tile(
+            context, 'My Color', 'Your color. Tap to change', Icons.color_lens,
             mycolor: Colors.orange),
-        _tile('PIN', 'Your PIN secures your app. Tap to change', Icons.key_rounded),
+        _tile(context, 'PIN', 'Your PIN secures your app. Tap to change',
+            Icons.key_rounded),
         const Divider(),
-        _tile('Help', 'View help information', Icons.help),
-        _tile('About', 'See version information about this app', Icons.info),
+        _tile(context, 'Help', 'View help information', Icons.help),
+        _tile(context, 'About', 'See version information about this app',
+            Icons.info),
       ],
     );
   }
 
-  Widget _getView(index) {
+  Widget _getView(BuildContext context, index) {
     if (index == 0) {
-      return _getHomeContent();
+      return _getHomeContent(context);
     } else if (index == 1) {
       return _discussionPage;
     } else {
@@ -77,7 +88,7 @@ class _HomePageState extends State<HomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: _getView(_selectedIndex),
+        child: _getView(context, _selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[

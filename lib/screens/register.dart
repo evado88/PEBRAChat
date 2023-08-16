@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart'; // new
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../utils/Assist.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, required this.title});
@@ -35,7 +38,9 @@ class _RegisterPageState extends State<RegisterPage> {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Successfully added car with make $make and year $year")),
+        SnackBar(
+            content:
+                Text("Successfully added car with make $make and year $year")),
       );
 
       return ref;
@@ -47,7 +52,18 @@ class _RegisterPageState extends State<RegisterPage> {
 
     return ref;
   }
-  // ...to here.
+
+  void _setSettings() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Save an integer value to 'counter' key.
+    await prefs.setString('phone', '260977123456');
+
+    String? phone = prefs.getString('phone');
+
+    Assist.log('The setting phone has been set to $phone');
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -58,11 +74,7 @@ class _RegisterPageState extends State<RegisterPage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the RegisterPage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
+      backgroundColor: Colors.purple,
       body: Center(
           child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -73,8 +85,8 @@ class _RegisterPageState extends State<RegisterPage> {
               margin: const EdgeInsets.fromLTRB(30, 10, 30, 10),
               padding: const EdgeInsets.fromLTRB(30, 10, 30, 10),
               decoration: BoxDecoration(
-                  border: Border.all(width: 4, color: Colors.grey),
-                  color: Colors.amber[50]),
+                  border: Border.all(width: 2, color: Colors.white),
+                  color: Colors.purple[50]),
               child: Column(
                 children: [
                   TextFormField(
@@ -110,11 +122,32 @@ class _RegisterPageState extends State<RegisterPage> {
                           // If the form is valid, display a snackbar. In the real world,
                           // you'd often call a server or save the information in a database.
 
-                          addMessageToGuestBook(
-                              _makeController.text, _yearController.text);
+                          _setSettings();
+                          //addMessageToGuestBook(_makeController.text, _yearController.text);
                         }
                       },
                       child: const Text('SUBMIT'),
+                    ),
+                  ),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(
+                            40), // fromHeight use double.infinity as width and 40 is the height
+                      ),
+                      onPressed: () {
+                        // Validate returns true if the form is valid, or false otherwise.
+                        if (_formKey.currentState!.validate()) {
+                          // If the form is valid, display a snackbar. In the real world,
+                          // you'd often call a server or save the information in a database.
+
+                          Assist.removeUser();
+                          //addMessageToGuestBook(_makeController.text, _yearController.text);
+                        }
+                      },
+                      child: const Text('REMOVE'),
                     ),
                   ),
                 ],

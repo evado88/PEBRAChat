@@ -3,16 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:kitchen/firebase_options.dart';
 import 'package:kitchen/screens/home.dart';
 import 'package:kitchen/screens/register.dart';
+import 'package:kitchen/utils/Assist.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const MyApp());
+  String phone = await Assist.getUser();
+
+
+  runApp(MyApp(
+    registeredPhone: phone,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String registeredPhone;
+
+  const MyApp({super.key, required this.registeredPhone});
 
   // This widget is the root of your application.
   @override
@@ -31,7 +41,9 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.purple,
       ),
-      home: const HomePage(title: 'Twyshe Messenger'),
+      home: Assist.isRegistered(registeredPhone)
+          ? const HomePage(title: 'Twyshe Messenger')
+          : const RegisterPage(title: 'Register'),
       //initialRoute: '/', this is not needed if home is defined
       routes: {
         '/register': (context) => const RegisterPage(title: 'Register'),
@@ -39,6 +51,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-
-
