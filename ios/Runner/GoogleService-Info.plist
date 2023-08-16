@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>878075714362-158qlrn3990029sljes2ibjiv5m7k27o.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC9AIESKzqnofw9omiQzK9Pwx_xFdOKLlU</string>
+	<key>GCM_SENDER_ID</key>
+	<string>878075714362</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>org.twyshe.chat</string>
+	<key>PROJECT_ID</key>
+	<string>myzambia-5c62c</string>
+	<key>STORAGE_BUCKET</key>
+	<string>myzambia-5c62c.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:878075714362:ios:d2ce5a46f1cc6227cd0e03</string>
+	<key>DATABASE_URL</key>
+	<string>https://myzambia-5c62c.firebaseio.com</string>
+</dict>
+</plist>

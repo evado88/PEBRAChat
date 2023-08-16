@@ -1,0 +1,343 @@
+{
+  "project_info": {
+    "project_number": "878075714362",
+    "firebase_url": "https://myzambia-5c62c.firebaseio.com",
+    "project_id": "myzambia-5c62c",
+    "storage_bucket": "myzambia-5c62c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:dedc7fe21e0ece6ecd0e03",
+        "android_client_info": {
+          "package_name": "com.example.kitchen"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:e712884b14be3273cd0e03",
+        "android_client_info": {
+          "package_name": "com.mysafespace"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-ev7iv1en1236dth8pcq6njk9lidkuq3h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mysafespace",
+            "certificate_hash": "275b93eec793177b07ecbb706b2b5320c82e0e42"
+          }
+        },
+        {
+          "client_id": "878075714362-np79lns8t302opseumab18agqkurskej.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mysafespace",
+            "certificate_hash": "51a0cfa5d20f57940871de29c6d794c4579ad2bc"
+          }
+        },
+        {
+          "client_id": "878075714362-uh0812akh9g2khrbj0v8qmtc6qngeljh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mysafespace",
+            "certificate_hash": "43053b8a81a7448491dd92fbe0aee515063191bc"
+          }
+        },
+        {
+          "client_id": "878075714362-uislec36cj5dvhgu5148ir8isq19tgf4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mysafespace",
+            "certificate_hash": "c1ee43c522be2a007273c53504058ae35b83cd7e"
+          }
+        },
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:2330a6a45f82e764",
+        "android_client_info": {
+          "package_name": "com.myzambia"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-8far8n9qifg6u22s83qr4du7ca290ihs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.myzambia",
+            "certificate_hash": "a40134e9c0d21d4ae8c9646f37d5043063c59f0a"
+          }
+        },
+        {
+          "client_id": "878075714362-poor9qs3l7vvi7bmsfqmh93dktheknbe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.myzambia",
+            "certificate_hash": "51a0cfa5d20f57940871de29c6d794c4579ad2bc"
+          }
+        },
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:1590e94f0b8f119dcd0e03",
+        "android_client_info": {
+          "package_name": "com.strangerchat.zm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:5e07cb9354928d70cd0e03",
+        "android_client_info": {
+          "package_name": "com.villagebanking"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-3u7au3hr2hvr9hpuisn96p032ohgqt3u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.villagebanking",
+            "certificate_hash": "948e645dd71fe8983321f94c715ccd149722261a"
+          }
+        },
+        {
+          "client_id": "878075714362-56doi41rgkvse71dsb7mstuop65r3ovl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.villagebanking",
+            "certificate_hash": "ddd868633d449580073d0ffdbb48ab481a74683b"
+          }
+        },
+        {
+          "client_id": "878075714362-dnnai5fv7mj5inj1p5rn838aq9sc15f3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.villagebanking",
+            "certificate_hash": "3669d06596c778e565a2e89e11a4ec21f2c23b47"
+          }
+        },
+        {
+          "client_id": "878075714362-fdja1780hiautrig1u881dlufr0e3rst.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.villagebanking",
+            "certificate_hash": "51a0cfa5d20f57940871de29c6d794c4579ad2bc"
+          }
+        },
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:ac483c6c24ca03fecd0e03",
+        "android_client_info": {
+          "package_name": "org.cidrz.lab"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:919ca401bb3bb4f3cd0e03",
+        "android_client_info": {
+          "package_name": "org.twyshe.chat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
