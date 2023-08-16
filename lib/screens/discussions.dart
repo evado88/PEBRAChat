@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:kitchen/screens/add_discussion.dart';
 
 class DiscussionPage extends StatefulWidget {
   const DiscussionPage({super.key, required this.title});
@@ -23,7 +24,7 @@ class DiscussionPage extends StatefulWidget {
 class _DiscussionPageState extends State<DiscussionPage> {
   // Setting reference to 'tasks' collection
   final Stream<QuerySnapshot> _usersStream =
-      FirebaseFirestore.instance.collection('cars').snapshots();
+      FirebaseFirestore.instance.collection('twyshe-discussions').snapshots();
 
   @override
   void initState() {
@@ -46,30 +47,44 @@ class _DiscussionPageState extends State<DiscussionPage> {
           );
         }
 
-        return ListView(
-          children: snapshot.data!.docs
-              .map((DocumentSnapshot document) {
-                Map<String, dynamic> data =
-                    document.data()! as Map<String, dynamic>;
-                return ListTile(
-                  title: Text(data['make']),
-                  subtitle: Text(data['year']),
-                  onTap: () {
-                    String make = data['make'] as String;
-                    String year = data['year'] as String;
+        return Scaffold(
+          body: ListView(
+            children: snapshot.data!.docs
+                .map((DocumentSnapshot document) {
+                  Map<String, dynamic> data =
+                      document.data()! as Map<String, dynamic>;
+                  return ListTile(
+                    title: Text(data['title']),
+                    subtitle: Text('${data['posts'].toString()} Posts'),
+                    onTap: () {
+                      String make = data['title'] as String;
+                      String year = data['posts'] as String;
 
-                    ScaffoldMessenger.of(context)
-                      ..removeCurrentSnackBar()
-                      ..showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                "You tapped on car with make $make and year $year")),
-                      );
-                  },
-                );
-              })
-              .toList()
-              .cast(),
+                      ScaffoldMessenger.of(context)
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  "You tapped on car with make $make and year $year")),
+                        );
+                    },
+                  );
+                })
+                .toList()
+                .cast(),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: (() {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const AddDiscussionPage(title: 'Add Discussion'),
+                ),
+              );
+            }),
+            tooltip: 'Add Discussion',
+            child: const Icon(Icons.add),
+          ), // This trailing comma makes auto-formatting nicer for build methods.
         );
       },
     ));

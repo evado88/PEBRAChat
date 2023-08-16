@@ -5,14 +5,14 @@ import 'package:kitchen/screens/home.dart';
 import 'package:kitchen/screens/register.dart';
 import 'package:kitchen/utils/Assist.dart';
 
-
+//Main entry point for app
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  //Assist.removeUser();/Uncomment in prod
   String phone = await Assist.getUser();
-
 
   runApp(MyApp(
     registeredPhone: phone,
