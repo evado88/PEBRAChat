@@ -1,13 +1,15 @@
 import 'dart:io';
-import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_chat_types/flutter_chat_types.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:kitchen/classes/discussion.dart';
+import 'package:kitchen/classes/user.dart';
 import 'package:kitchen/utils/Assist.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
@@ -15,23 +17,40 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 class DiscussionPage extends StatefulWidget {
-  const DiscussionPage({super.key});
+  ///The reference for this discussion
+  final TwysheDiscussion discussion;
+  const DiscussionPage({super.key, required this.discussion});
 
   @override
   State<DiscussionPage> createState() => _DiscussionPageState();
 }
 
 class _DiscussionPageState extends State<DiscussionPage> {
-  List<types.Message> _messages = [];
+  // Setting reference to 'tasks' collection
+  final Stream<QuerySnapshot> _postsStream = FirebaseFirestore.instance
+      .collection('twyshe-discussion-posts')
+      .snapshots();
 
-  final _user = const types.User(
-    id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
-  );
+  final List<types.Message> _messages = [];
+
+  late TwysheUser twysheUser;
+  late User _user;
 
   @override
   void initState() {
     super.initState();
-    _loadMessages();
+    _setUser();
+  }
+
+//
+  void _setUser() async {
+
+    twysheUser = await Assist.getUserProfile();
+
+    _user = types.User(
+      id: twysheUser.phone,
+      firstName: twysheUser.nickname
+    );
   }
 
   void _addMessage(types.Message message) {
@@ -189,6 +208,9 @@ class _DiscussionPageState extends State<DiscussionPage> {
   }
 
   void _handleSendPressed(types.PartialText message) {
+
+
+
     final textMessage = types.TextMessage(
       author: _user,
       createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -197,34 +219,78 @@ class _DiscussionPageState extends State<DiscussionPage> {
     );
 
     _addMessage(textMessage);
-  }
 
-  void _loadMessages() async {
-    final response = await rootBundle.loadString('asset/messages.json');
-    final messages = (jsonDecode(response) as List)
-        .map((e) => types.Message.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    setState(() {
-      _messages = messages;
-    });
+    
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(Assist.appName),
-      ),
-      body: Chat(
-        messages: _messages,
-        onAttachmentPressed: _handleAttachmentPressed,
-        onMessageTap: _handleMessageTap,
-        onPreviewDataFetched: _handlePreviewDataFetched,
-        onSendPressed: _handleSendPressed,
-        showUserAvatars: true,
-        showUserNames: true,
-        user: _user,
+          title: ListTile(
+        title: Text(widget.discussion.title,
+            style: const TextStyle(color: Colors.white)),
+        subtitle: Text(widget.discussion.nickname,
+            style: const TextStyle(color: Colors.white)),
+      )),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _postsStream,
+        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('Something went wrong'));
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          return Chat(
+            messages: snapshot.data!.docs
+                .map((DocumentSnapshot document) {
+                  Map<String, dynamic> data =
+                      document.data()! as Map<String, dynamic>;
+
+                  //get ref
+                  String ref = document.id;
+
+                  //set user
+                  String userId = data['author']['id'];
+                  String userFirstName = data['author']['firstName'];
+                  String userLastName = data['author']['lastName'];
+
+                  User messageUser = User(
+                      id: userId,
+                      firstName: userFirstName,
+                      lastName: userLastName);
+
+                  //text message
+                  Timestamp messageCreatedAt = data['createdAt'];
+                  String messageId = data['id'];
+                  String messageStatus = data['status'];
+                  String messageText = data['text'];
+                  String messageType = data['type'];
+
+                  var textMessage = types.TextMessage(
+                      author: messageUser,
+                      createdAt: messageCreatedAt.millisecondsSinceEpoch,
+                      id: messageId,
+                      text: messageText,
+                      status: Status.seen,
+                      type: MessageType.text);
+                  return textMessage;
+                })
+                .toList()
+                .cast(),
+            onAttachmentPressed: _handleAttachmentPressed,
+            onMessageTap: _handleMessageTap,
+            onPreviewDataFetched: _handlePreviewDataFetched,
+            onSendPressed: _handleSendPressed,
+            showUserAvatars: true,
+            showUserNames: true,
+            user: _user,
+          );
+        },
       ),
     );
   }

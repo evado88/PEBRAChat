@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:kitchen/classes/user.dart';
 import '../utils/Assist.dart';
 
 ///Handles profile chanegs by the user
@@ -29,7 +30,8 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
 
   ///Adds a new discussion to firestore
   void _addDiscussion(String title, String description) async {
-    String user = await Assist.getUser();
+
+    TwysheUser user = await Assist.getUserProfile();
 
     FirebaseFirestore.instance
         .collection(Assist.firestireDiscussionsKey)
@@ -39,7 +41,9 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
       'posted': Timestamp.now(),
       'posts': Random().nextInt(100),
       'status': 1,
-      'user': user,
+      'user': user.phone,
+      'nickname': user.nickname,
+      'color': user.color,
       'approver': null,
     }).then((value) {
       setState(() {

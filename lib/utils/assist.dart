@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kitchen/classes/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 ///Contains common properties and methods for the entire application
@@ -24,7 +25,7 @@ class Assist {
   ///The key used in preferences for a color
   static const colorKey = 'color';
 
-   ///The key used in firestore to store discussions
+  ///The key used in firestore to store discussions
   static const firestireDiscussionsKey = 'twyshe-discussions';
 
   ///Checks if the specified phone number is for a registered user
@@ -54,6 +55,22 @@ class Assist {
         'The user currently registered on the device is \'$currentPhone\'');
 
     return currentPhone;
+  }
+
+  ///Gets the currently registered user setting on the device
+  static Future<TwysheUser> getUserProfile() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String currentPhone =
+        prefs.getString(Assist.userKey) ?? Assist.unregisteredPhone;
+    String currentPin = prefs.getString(Assist.pinKey) ?? '';
+    String currentNickname = prefs.getString(Assist.nicknameKey) ?? '';
+    String currentColor = prefs.getString(Assist.colorKey) ?? '';
+
+    TwysheUser user =
+        TwysheUser(currentPhone, currentNickname, currentColor, currentPin);
+
+    return user;
   }
 
   ///Registers the specified user on the device

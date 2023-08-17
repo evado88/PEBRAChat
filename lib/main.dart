@@ -11,7 +11,7 @@ void main() async {
 
   Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  //Assist.removeUser();/Uncomment in prod
+  //Assist.removeUser();// Uncomment in prod
   String phone = await Assist.getUser();
 
   runApp(MyApp(
