@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +7,7 @@ import 'package:flutter_chat_types/flutter_chat_types.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:twyshe/classes/discussion.dart';
+import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/utils/Assist.dart';
 import 'package:mime/mime.dart';
@@ -16,16 +15,16 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-class DiscussionPage extends StatefulWidget {
-  ///The reference for this discussion
-  final TwysheDiscussion discussion;
-  const DiscussionPage({super.key, required this.discussion});
+class ChatPage extends StatefulWidget {
+  ///The reference for this conversation
+  final TwysheConversation conversation;
+  const ChatPage({super.key, required this.conversation});
 
   @override
-  State<DiscussionPage> createState() => _DiscussionPageState();
+  State<ChatPage> createState() => _ChatPageState();
 }
 
-class _DiscussionPageState extends State<DiscussionPage> {
+class _ChatPageState extends State<ChatPage> {
   // Setting reference to 'tasks' collection
   late final List<types.Message> _messages = [];
 
@@ -200,11 +199,11 @@ class _DiscussionPageState extends State<DiscussionPage> {
   }
 
   void _handleSendPressed(types.PartialText message) {
-    _postDiscussionMessage(message.text);
+    _postMessage(message.text);
   }
 
-  ///Adds the message to the discussion on firestore
-  void _postDiscussionMessage(String text) async {
+  ///Adds the message to the conversation on firestore
+  void _postMessage(String text) async {
     Map<String, dynamic> author = {
       'firstName': twysheUser.nickname,
       'id': twysheUser.phone,
@@ -212,9 +211,9 @@ class _DiscussionPageState extends State<DiscussionPage> {
       'color': twysheUser.color,
     };
     FirebaseFirestore.instance
-        .collection(Assist.firestireDiscussionPostsKey)
+        .collection(Assist.firestireConversationChatsKey)
         .add(<String, dynamic>{
-      'discussion': widget.discussion.ref,
+      'conversation': widget.conversation.ref,
       'author': author,
       'createdAt': Timestamp.now(),
       'id': null,
@@ -223,11 +222,11 @@ class _DiscussionPageState extends State<DiscussionPage> {
       'type': MessageType.text.name,
     }).then((resPost) {
       Assist.log(
-          'The message \'$text\' has been successfully posted to the discussion \'${widget.discussion.nickname}\'');
+          'The message \'$text\' has been successfully posted to the comversation \'${widget.conversation.nickname}\'');
 
       FirebaseFirestore.instance
-          .collection(Assist.firestireDiscussionPostsKey)
-          .where('discussion', isEqualTo: widget.discussion.ref)
+          .collection(Assist.firestireConversationChatsKey)
+          .where('conversation', isEqualTo: widget.conversation.ref)
           .count()
           .get()
           .then((resCount) {
@@ -236,24 +235,24 @@ class _DiscussionPageState extends State<DiscussionPage> {
         };
 
         FirebaseFirestore.instance
-            .collection(Assist.firestireDiscussionsKey)
-            .doc(widget.discussion.ref)
+            .collection(Assist.firestireConversationsKey)
+            .doc(widget.conversation.ref)
             .update(newvalues)
             .then((updateRes) {
           Assist.log(
-              'The count for discussion \'${widget.discussion.ref}\' has been successfully updated to {$resCount.count}');
+              'The count for conversation \'${widget.conversation.ref}\' has been successfully updated to {$resCount.count}');
         }).onError((errorUpdate, stackTrace) {
           Assist.log(
-              'Error updating the count for discussion \'${widget.discussion.ref}\': $errorUpdate');
+              'Error updating the count for conversation \'${widget.conversation.ref}\': $errorUpdate');
         });
       }).onError((errorCount, st) {
         Assist.log(
-            'Error counting posts for the discussion \'${widget.discussion.ref}\': $errorCount');
+            'Error counting posts for the conversation \'${widget.conversation.ref}\': $errorCount');
       });
     }).onError((resError, stackTrace) {
       Assist.showSnackBar(
-          context, 'Unable to post message to discussion. Please try again');
-      Assist.log('Unable to post message to the discussion: $resError');
+          context, 'Unable to post message to conversation. Please try again');
+      Assist.log('Unable to post message to the conversation: $resError');
     });
   }
 
@@ -262,15 +261,15 @@ class _DiscussionPageState extends State<DiscussionPage> {
     return Scaffold(
       appBar: AppBar(
           title: ListTile(
-        title: Text(widget.discussion.title,
-            style: const TextStyle(color: Colors.white)),
-        subtitle: const Text('All posts here are anonymous',
+        title: const Text('My Peer Navigator',
             style: TextStyle(color: Colors.white)),
+        subtitle: Text('${widget.conversation.pn} - Last seen Today ',
+            style: const TextStyle(color: Colors.white)),
       )),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection(Assist.firestireDiscussionPostsKey)
-            .where('discussion', isEqualTo: widget.discussion.ref)
+            .collection(Assist.firestireConversationChatsKey)
+            .where('conversation', isEqualTo: widget.conversation.ref)
             .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {

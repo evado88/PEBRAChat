@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen/classes/discussion.dart';
-import 'package:kitchen/screens/add_discussion.dart';
-import 'package:kitchen/screens/discussion.dart';
+import 'package:intl/intl.dart';
+import 'package:twyshe/classes/discussion.dart';
+import 'package:twyshe/screens/add_discussion.dart';
+import 'package:twyshe/screens/discussion.dart';
 
 class DiscussionsPage extends StatefulWidget {
   const DiscussionsPage({super.key, required this.title});
@@ -36,6 +37,7 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.purple,
       body: StreamBuilder<QuerySnapshot>(
         stream: _usersStream,
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -50,42 +52,58 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
           }
 
           return ListView(
-              children: snapshot.data!.docs
-                  .map((DocumentSnapshot document) {
-                    Map<String, dynamic> data =
-                        document.data()! as Map<String, dynamic>;
+            children: snapshot.data!.docs
+                .map((DocumentSnapshot document) {
+                  Map<String, dynamic> data =
+                      document.data()! as Map<String, dynamic>;
 
-                    String ref = document.id;
+                  String ref = document.id;
 
-                    String title = data['title'];
-                    String description = data['description'];
+                  String title = data['title'];
+                  String description = data['description'];
 
-                    String phone = data['user'];
-                    String nickname = data['nickname'];
-                    String color = data['color'];
+                  String phone = data['user'];
+                  String nickname = data['nickname'];
+                  String color = data['color'];
 
-                    int posts = data['posts'] as int;
-                    Timestamp timestamp = data['posted'] as Timestamp;
+                  int posts = data['posts'] as int;
+                  Timestamp timestamp = data['posted'] as Timestamp;
 
-                    TwysheDiscussion discussion = TwysheDiscussion(ref, title,
-                        description, phone, nickname, color, posts, timestamp);
+                  TwysheDiscussion discussion = TwysheDiscussion(ref, title,
+                      description, phone, nickname, color, posts, timestamp);
 
-                    return ListTile(
-                      title: Text(discussion.title),
-                      subtitle: Text(discussion.description),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                DiscussionPage(discussion: discussion),
-                          ),
-                        );
-                      },
-                    );
-                  })
-                  .toList()
-                  .cast(),
-            );
+                  String date =
+                      DateFormat('d MMM yyy H:m').format(timestamp.toDate());
+
+                  return Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
+                      child: Card(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0)),
+                        child: ListTile(
+                          title: Text(discussion.title),
+                          subtitle: Text(posts == 0
+                              ? 'No Posts'
+                              : '$posts Posts • $nickname • $date'),
+                          leading: CircleAvatar(
+                              radius: 20,
+                              child: Text(nickname.toUpperCase().substring(0, 2))
+                              ),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    DiscussionPage(discussion: discussion),
+                              ),
+                            );
+                          },
+                        ),
+                      ));
+                })
+                .toList()
+                .cast(),
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(

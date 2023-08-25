@@ -1,9 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen/firebase_options.dart';
-import 'package:kitchen/screens/home.dart';
-import 'package:kitchen/screens/register.dart';
-import 'package:kitchen/utils/Assist.dart';
+import 'package:twyshe/firebase_options.dart';
+import 'package:twyshe/screens/home.dart';
+import 'package:twyshe/screens/register.dart';
+import 'package:twyshe/utils/Assist.dart';
 
 //Main entry point for app
 void main() async {

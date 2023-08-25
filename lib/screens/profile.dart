@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:twyshe/classes/user.dart';
 import '../utils/Assist.dart';
 
 ///Handles profile chanegs by the user
@@ -15,11 +16,36 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _nicknameController =
-      TextEditingController(text: 'butterfly');
+  String nickname = '';
+  String pin = '';
 
-  final TextEditingController _pinController =
-      TextEditingController(text: '1234');
+  final TextEditingController _nicknameController = TextEditingController();
+
+  final TextEditingController _pinController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _setUser();
+  }
+
+  void _setUser() async {
+    TwysheUser profile = await Assist.getUserProfile();
+
+    _nicknameController.text = profile.nickname;
+    _pinController.text = profile.pin;
+  }
+
+  void _saveProfile() async {
+    await Assist.saveProfile(_pinController.text, _nicknameController.text,
+        Assist.getColorHex(Colors.purple));
+
+    if (!mounted) {
+      return;
+    }
+    
+    Navigator.pop(context, 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,12 +146,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             // you'd often call a server or save the information in a database.
 
                             //addMessageToGuestBook(_makeController.text, _yearController.text);
-                            Assist.saveProfile(
-                                _pinController.text,
-                                _nicknameController.text,
-                                Assist.getColorHex(Colors.purple));
-
-                            Navigator.pop(context, 0);
+                            _saveProfile();
                           }
                         },
                         child: const Text('SAVE PROFILE'),

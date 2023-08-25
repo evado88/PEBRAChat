@@ -1,8 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen/screens/discussions.dart';
-import 'package:kitchen/screens/profile.dart';
-import 'package:kitchen/screens/resources.dart';
-import 'package:kitchen/utils/assist.dart';
+import 'package:twyshe/classes/converation.dart';
+import 'package:twyshe/classes/user.dart';
+import 'package:twyshe/screens/chat.dart';
+import 'package:twyshe/screens/discussions.dart';
+import 'package:twyshe/screens/profile.dart';
+import 'package:twyshe/screens/resources.dart';
+import 'package:twyshe/utils/assist.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -18,8 +22,62 @@ class _HomePageState extends State<HomePage> {
 
   final DiscussionsPage _discussionPage =
       const DiscussionsPage(title: 'Discussions');
-      
+
   final ResourcePage _resourcePage = const ResourcePage(title: 'Resources');
+
+  String nickname = '';
+  String phone = '';
+  String pn = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _setUser();
+  }
+
+  void _setUser() async {
+    TwysheUser profile = await Assist.getUserProfile();
+
+    setState(() {
+      nickname = profile.nickname;
+      phone = profile.phone;
+      pn = profile.pnPhone;
+    });
+  }
+
+  ///Adds a new discussion to firestore
+  void _startConversation(String conversationId) async {
+    FirebaseFirestore.instance
+        .collection(Assist.firestireConversationsKey)
+        .doc(conversationId)
+        .set(<String, dynamic>{
+      'user': phone,
+      'nickname': nickname,
+      'pn': pn,
+      'posted': Timestamp.now(),
+      'status': 1,
+      'posts': 0,
+    }).then((value) {
+      Assist.log(
+          'The conversation \'$conversationId\' has been successfully added!');
+
+      TwysheConversation conversation = TwysheConversation(
+          conversationId, phone, nickname, pn, Timestamp.now(), 1, 0);
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ChatPage(conversation: conversation),
+        ),
+      );
+
+      
+    }).onError((error, stackTrace) {
+      Assist.showSnackBar(
+          context, 'Unable to start the chat. Please try again');
+
+      Assist.log('Unable to add the conversation: $error');
+    });
+  }
 
   ListTile _tile(BuildContext context, int index, String title, String subtitle,
       IconData icon,
@@ -39,35 +97,58 @@ class _HomePageState extends State<HomePage> {
       onTap: () {
         Assist.log('The item has been tapped at $index');
 
-        if (index >= 2 && index <= 4) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ProfilePage(title: Assist.appName),
-            ),
-          );
-        }else if(index==6){
+        if (index == 1) {
+          String? conversationId = Assist.getCoversationId(phone, pn);
+
+          if (conversationId == null) {
+            //same phone number
+            Assist.showSnackBar(
+                context, 'Sorry! But you cannot chat with yourself!');
+          } else {
+            //start conversation
+            Assist.log(
+                'Starting conversation for user $phone and peer navigator $pn and $conversationId computed id');
+
+            _startConversation(conversationId);
+          }
+        } else if (index >= 2 && index <= 4) {
+          _showUpdateProfile();
+        } else if (index == 7) {
           Assist.removeUser();
         }
       },
     );
   }
 
+  Future<void> _showUpdateProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) => const ProfilePage(
+                title: 'Update Profile',
+              )),
+    );
+
+    _setUser();
+  }
+
   ListView _getHomeContent(BuildContext context) {
     return ListView(
       children: [
-        _tile(context, 1, 'My Peer Navigator', 'Chat with your peer navigator',
-            Icons.personal_injury),
+        _tile(context, 1, 'My Peer Navigator - $pn',
+            'Chat with your peer navigator', Icons.personal_injury),
         const Divider(),
-        _tile(context, 2, 'Butterfly', 'Your nickname. Tap to change',
-            Icons.face),
+        _tile(context, 2, nickname, 'Your nickname. Tap to change', Icons.face),
         _tile(context, 3, 'My Color', 'Your color. Tap to change',
             Icons.color_lens,
             mycolor: Colors.orange),
         _tile(context, 4, 'PIN', 'Your PIN secures your app. Tap to change',
             Icons.key_rounded),
+        _tile(context, 5, phone,
+            'Your phone number. Your number cannot be changed', Icons.phone),
         const Divider(),
-        _tile(context, 5, 'Help', 'View help information', Icons.help),
-        _tile(context, 6, 'About', 'See version information about this app',
+        _tile(context, 6, 'Help', 'View help information', Icons.help),
+        _tile(context, 7, 'About', 'See version information about this app',
             Icons.info),
       ],
     );

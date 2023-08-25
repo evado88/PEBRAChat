@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen/screens/home.dart';
-import 'package:kitchen/screens/profile.dart';
+import 'package:twyshe/screens/home.dart';
+import 'package:twyshe/screens/profile.dart';
 
 import '../utils/Assist.dart';
 

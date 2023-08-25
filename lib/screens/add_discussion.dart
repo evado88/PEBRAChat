@@ -1,9 +1,8 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:kitchen/classes/user.dart';
+import 'package:twyshe/classes/user.dart';
 import '../utils/Assist.dart';
 
 ///Handles profile chanegs by the user
@@ -39,7 +38,7 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
       'title': title,
       'description': description,
       'posted': Timestamp.now(),
-      'posts': Random().nextInt(100),
+      'posts': 0,
       'status': 1,
       'user': user.phone,
       'nickname': user.nickname,

@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:twyshe/classes/resource.dart';
+import 'package:twyshe/classes/facility.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 
-class ResourcePage extends StatefulWidget {
+class FacilityPage extends StatefulWidget {
   final String title;
 
-  const ResourcePage({super.key, required this.title});
+  const FacilityPage({super.key, required this.title});
 
   @override
-  State<ResourcePage> createState() => _ResourcePageState();
+  State<FacilityPage> createState() => _FacilityPageState();
 }
 
-class _ResourcePageState extends State<ResourcePage> {
-  List<TwysheResource> items = [];
+class _FacilityPageState extends State<FacilityPage> {
+  List<TwysheFacility> items = [];
 
   bool loading = true;
   bool succeeded = false;
@@ -29,11 +29,11 @@ class _ResourcePageState extends State<ResourcePage> {
       loading = true;
     });
 
-    TwysheTaskResult rs = await TwysheAPI.fetchTwysheResources();
+    TwysheTaskResult rs = await TwysheAPI.fetchTwysheFacilities();
 
     if (rs.succeeded) {
       setState(() {
-        items = rs.items as List<TwysheResource>;
+        items = rs.items as List<TwysheFacility>;
         succeeded = true;
         loading = false;
       });
@@ -81,16 +81,16 @@ class _ResourcePageState extends State<ResourcePage> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0)),
               child: ListTile(
-                title: Text(items[index].resourceName,
+                title: Text(items[index].facilityName,
                     style: const TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 20,
                     )),
-                subtitle: Text(items[index].resourceDescription),
+                subtitle: Text(items[index].facilityAddress),
                 leading: CircleAvatar(
                   radius: 40,
                   backgroundImage:
-                      NetworkImage(items[index].resourceThumbnailUrl),
+                      NetworkImage(items[index].facilityThumbnailUrl),
                 ),
               ),
             );
