@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_types/flutter_chat_types.dart';
@@ -10,10 +11,12 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:twyshe/classes/discussion.dart';
 import 'package:twyshe/classes/user.dart';
-import 'package:twyshe/utils/Assist.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:twyshe/screens/task_result.dart';
+import 'package:twyshe/utils/api.dart';
+import 'package:twyshe/utils/assist.dart';
 import 'package:uuid/uuid.dart';
 
 class DiscussionPage extends StatefulWidget {
@@ -185,6 +188,41 @@ class _DiscussionPageState extends State<DiscussionPage> {
     }
   }
 
+  void _handleMessageLongPress(BuildContext _, types.Message message) async {
+    List<Widget> buttons = [];
+
+    if (message.author.id == _user.id) {
+      buttons.add(
+        TextButton(
+          child: const Text('Delete'),
+          onPressed: () {
+            Assist.log('The message with id ${message.id} was deleted');
+            _removeDiscussionMessage(message.id);
+            Navigator.pop(context);
+          },
+        ),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Message'),
+          content: ListTile(
+            title: const Text(
+              'Sent',
+            ),
+            subtitle: Text(
+              message.createdAt.toString(),
+            ),
+          ),
+          actions: buttons,
+        );
+      },
+    );
+  }
+
   void _handlePreviewDataFetched(
     types.TextMessage message,
     types.PreviewData previewData,
@@ -218,6 +256,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
       'author': author,
       'createdAt': Timestamp.now(),
       'id': null,
+      'state': 1,
       'status': Status.sent.name,
       'text': text,
       'type': MessageType.text.name,
@@ -225,9 +264,63 @@ class _DiscussionPageState extends State<DiscussionPage> {
       Assist.log(
           'The message \'$text\' has been successfully posted to the discussion \'${widget.discussion.nickname}\'');
 
+      ///subscribe to topic if the user isnt the owner
+      if (widget.discussion.phone != _user.id) {
+        Assist.subscribeTopic(widget.discussion.ref);
+      }
+      //send  notification
+      TwysheAPI.sendTopicMessage(
+          widget.discussion.ref, '${twysheUser.nickname} - ${widget.discussion.title}', text);
+
+      ///update count
       FirebaseFirestore.instance
           .collection(Assist.firestireDiscussionPostsKey)
           .where('discussion', isEqualTo: widget.discussion.ref)
+          .where('state', isEqualTo: Assist.messageStateActive)
+          .count()
+          .get()
+          .then((resCount) {
+        Map<String, dynamic> newvalues = {
+          'posts': resCount.count,
+        };
+
+        FirebaseFirestore.instance
+            .collection(Assist.firestireDiscussionsKey)
+            .doc(widget.discussion.ref)
+            .update(newvalues)
+            .then((updateRes) {
+          Assist.log(
+              'The count for discussion \'${widget.discussion.ref}\' has been successfully updated to {$resCount.count}');
+        }).onError((errorUpdate, stackTrace) {
+          Assist.log(
+              'Error updating the count for discussion \'${widget.discussion.ref}\': $errorUpdate');
+        });
+      }).onError((errorCount, st) {
+        Assist.log(
+            'Error counting posts for the discussion \'${widget.discussion.ref}\': $errorCount');
+      });
+    }).onError((resError, stackTrace) {
+      Assist.showSnackBar(
+          context, 'Unable to post message to discussion. Please try again');
+      Assist.log('Unable to post message to the discussion: $resError');
+    });
+  }
+
+  ///Adds the message to the discussion on firestore
+  void _removeDiscussionMessage(String id) async {
+    FirebaseFirestore.instance
+        .collection(Assist.firestireDiscussionPostsKey)
+        .doc(id)
+        .update(<String, dynamic>{
+      'state': Assist.messageStateDeleted,
+    }).then((resPost) {
+      Assist.log(
+          'The message id \'$id\' has been successfully deleted from the discussion \'${widget.discussion.nickname}\'');
+
+      FirebaseFirestore.instance
+          .collection(Assist.firestireDiscussionPostsKey)
+          .where('discussion', isEqualTo: widget.discussion.ref)
+          .where('state', isEqualTo: Assist.messageStateActive)
           .count()
           .get()
           .then((resCount) {
@@ -261,16 +354,46 @@ class _DiscussionPageState extends State<DiscussionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: ListTile(
-        title: Text(widget.discussion.title,
-            style: const TextStyle(color: Colors.white)),
-        subtitle: const Text('All posts here are anonymous',
-            style: TextStyle(color: Colors.white)),
-      )),
+        title: ListTile(
+          title: Text(widget.discussion.title,
+              style: const TextStyle(color: Colors.white)),
+          subtitle: const Text('All posts here are anonymous',
+              style: TextStyle(color: Colors.white)),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_active,
+              color: Colors.white,
+            ),
+            onPressed: () async {
+              // do something
+              ///subscribe to this discussion
+              Assist.subscribeTopic(widget.discussion.ref);
+              Assist.showSnackBar(
+                  context, 'Subscribed to ${widget.discussion.title}');
+            },
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_off,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              // do something
+              ///subscribe to this discussion
+              Assist.unsubscribeTopic(widget.discussion.ref);
+              Assist.showSnackBar(
+                  context, 'Unsubscribed from ${widget.discussion.title}');
+            },
+          )
+        ],
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection(Assist.firestireDiscussionPostsKey)
             .where('discussion', isEqualTo: widget.discussion.ref)
+            .where('state', isEqualTo: Assist.messageStateActive)
             .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -324,6 +447,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
             onMessageTap: _handleMessageTap,
             onPreviewDataFetched: _handlePreviewDataFetched,
             onSendPressed: _handleSendPressed,
+            onMessageLongPress: _handleMessageLongPress,
             showUserAvatars: true,
             showUserNames: true,
             user: _user,

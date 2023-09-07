@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:twyshe/classes/discussion.dart';
 import 'package:twyshe/screens/add_discussion.dart';
 import 'package:twyshe/screens/discussion.dart';
+import 'package:twyshe/utils/assist.dart';
 
 class DiscussionsPage extends StatefulWidget {
   const DiscussionsPage({super.key, required this.title});
@@ -26,8 +27,11 @@ class DiscussionsPage extends StatefulWidget {
 
 class _DiscussionsPageState extends State<DiscussionsPage> {
   // Setting reference to 'tasks' collection
-  final Stream<QuerySnapshot> _usersStream =
-      FirebaseFirestore.instance.collection('twyshe-discussions').snapshots();
+  final Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance
+      .collection('twyshe-discussions')
+      .where('status', isEqualTo: 1)
+      .orderBy('posted', descending: true)
+      .snapshots();
 
   @override
   void initState() {
@@ -88,8 +92,13 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                               : '$posts Posts • $nickname • $date'),
                           leading: CircleAvatar(
                               radius: 20,
-                              child: Text(nickname.toUpperCase().substring(0, 2))
-                              ),
+                              backgroundColor: discussion.color == ''
+                                  ? Colors.purple
+                                  : Assist.getHexColor(discussion.color),
+                              child: Text(
+                                nickname.toUpperCase().substring(0, 2),
+                                style: const TextStyle(color: Colors.white),
+                              )),
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(

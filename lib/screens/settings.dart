@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/colors.dart';
-import 'package:twyshe/screens/home.dart';
 import 'package:twyshe/utils/assist.dart';
 
 ///Handles profile chanegs by the user
 ///16 August 2023, Nkole Evans
-class ProfilePage extends StatefulWidget {
-  const ProfilePage(
-      {super.key, required this.title, required this.phoneNumber});
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key, required this.title});
 
   final String title;
-  final String phoneNumber;
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
 
   String _color = '';
@@ -37,15 +34,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
     _nicknameController.text = profile.nickname;
     _pinController.text = profile.pin;
-    _color = profile.color;
+
+    setState(() {
+      _color = profile.color;
+    });
   }
 
-  ///Saves the user on the device
-  void _saveProfile() async {
-    //Do not include the + in the number when saving
-    Assist.registerUser(widget.phoneNumber.substring(1));
-
-    //Save the profile settings
+  void _saveSettings() async {
     await Assist.saveProfile(
         _pinController.text, _nicknameController.text, _color);
 
@@ -53,13 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-            builder: (_) => const HomePage(
-                  title: Assist.appName,
-                )),
-        (route) => false);
+    Navigator.pop(context, 0);
   }
 
   Future<void> _showChooseColor() async {
@@ -182,7 +171,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             // you'd often call a server or save the information in a database.
 
                             //addMessageToGuestBook(_makeController.text, _yearController.text);
-                            _saveProfile();
+                            _saveSettings();
                           }
                         },
                         child: const Text('SAVE PROFILE'),

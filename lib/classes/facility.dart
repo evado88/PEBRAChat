@@ -17,8 +17,8 @@ class TwysheFacility {
     return TwysheFacility(
       facilityId: json['facility_id'] as int,
       facilityName: json['facility_name'] as String,
-      facilityAddress: json['facility_description'] as String,
-      facilityPhone: json['facility_url'] as String,
+      facilityAddress: json['facility_address'] as String,
+      facilityPhone: json['facility_phone'] as String,
       facilityThumbnailUrl: json['facility_thumbnailUrl'] as String,
     );
   }

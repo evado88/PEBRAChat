@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:async';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/user.dart';
@@ -13,6 +14,9 @@ class Assist {
   ///The name of the app
   static const appName = 'Twyshe Messenger';
 
+  ///The code of the app
+  static const appCode = 'Twyshe';
+
   ///The active api URL of the app
   static const apiUrl = 'http://10.0.2.2:5000';
 
@@ -24,6 +28,9 @@ class Assist {
 
   ///The phone number for a user who is not registered
   static const unregisteredPhone = 'unregistered';
+
+  ///The fcm token for a device that doesnt have one
+  static const unregisteredToken = 'fcmToken';
 
   ///The key used in preferences for a user
   static const userKey = 'phone';
@@ -54,6 +61,15 @@ class Assist {
 
   ///The key used in firestore to store the chats for a conversation
   static const firestireConversationChatsKey = 'twyshe-chats';
+
+  ///The status of the message which is active
+  static const messageStateActive = 1;
+
+  ///The status of the message which is deleted
+  static const messageStateDeleted = 2;
+
+  ///The key for the FCM token
+  static const String fcmTokenKey = 'fcmtoken';
 
   ///Checks if the specified phone number is for a registered user
   static bool isRegistered(String phoneNo) {
@@ -133,6 +149,34 @@ class Assist {
         'The user has been registered on the device. Initial state was \'$initialPhone\' and is now \'$currentPhone\'');
   }
 
+  ///Saves the FCM token on the device
+  static void saveFCMToken(String? token) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? initialToken = prefs.getString(Assist.fcmTokenKey);
+
+    // Save an integer value to 'counter' key.
+    await prefs.setString(
+        Assist.fcmTokenKey, token ?? Assist.unregisteredToken);
+
+    String? currentToken = prefs.getString(Assist.fcmTokenKey);
+
+    Assist.log(
+        'The token has been saved on the device. Initial state was \'$initialToken\' and is now \'$currentToken\'');
+  }
+
+  ///Gets the currently saved FCM token on the device
+  static Future<String> getFCMToken() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String currentToken =
+        prefs.getString(Assist.fcmTokenKey) ?? Assist.unregisteredToken;
+
+    Assist.log('The currently saved token on the device is \'$currentToken\'');
+
+    return currentToken;
+  }
+
   ///Registers the specified user on the device
   static Future<bool> saveProfile(
       String pin, String nickname, String color) async {
@@ -204,5 +248,36 @@ class Assist {
     return hex;
   }
 
+  ///Gets the code for the hex code
+  static Color getHexColor(String hex) {
+    return Color(int.parse(hex.replaceAll('#', '0xff')));
+  }
 
+  ///Subscribes to the specified topic
+  static void subscribeTopic(String topic) {
+    Assist.log('Subscribing to the topic $topic');
+
+    FirebaseMessaging.instance
+        .subscribeToTopic(topic)
+        .then((value) =>
+             Assist.log('Successfully subscribed to the topic $topic')
+            )
+        .onError((error, stackTrace) =>
+            Assist.log('Unable to subscribe to the topic $topic: $error'));
+  }
+
+  ///Unsubscribes to the specified topic
+  static void unsubscribeTopic(String topic) {
+    Assist.log('Unsubscribing from the topic $topic');
+
+    FirebaseMessaging.instance
+        .unsubscribeFromTopic(topic)
+        .then((value) =>
+            Assist.log('Successfully unsubscribed to the topic $topic')
+            )
+        .onError((error, stackTrace) =>
+            Assist.log('Unable to unsubscribe to the topic $topic: $error'));
+  }
+
+  
 }

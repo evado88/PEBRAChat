@@ -1,9 +1,7 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/user.dart';
-import '../utils/Assist.dart';
+import 'package:twyshe/utils/assist.dart';
 
 ///Handles profile chanegs by the user
 ///16 August 2023, Nkole Evans
@@ -29,7 +27,6 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
 
   ///Adds a new discussion to firestore
   void _addDiscussion(String title, String description) async {
-
     TwysheUser user = await Assist.getUserProfile();
 
     FirebaseFirestore.instance
@@ -51,6 +48,10 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
 
       Assist.showSnackBar(context,
           'The discussion \'${_titleController.text}\' has been successfully added!');
+
+      ///subscribe to notificatiosn since the user owns it
+      Assist.subscribeTopic(value.id);
+
       Assist.log(
           'The discussion \'${_titleController.text}\' has been successfully added with ref ${value.id}!');
 

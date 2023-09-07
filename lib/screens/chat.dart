@@ -260,12 +260,22 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: ListTile(
-        title: const Text('My Peer Navigator',
-            style: TextStyle(color: Colors.white)),
-        subtitle: Text('${widget.conversation.pn} - Last seen Today ',
-            style: const TextStyle(color: Colors.white)),
-      )),
+        title: ListTile(
+          title: const Text('My Peer Navigator',
+              style: TextStyle(color: Colors.white)),
+          subtitle: Text('${widget.conversation.pn} - Last seen Today ',
+              style: const TextStyle(color: Colors.white)),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            tooltip: 'Open shopping cart',
+            onPressed: () {
+              // handle the press
+            },
+          ),
+        ],
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection(Assist.firestireConversationChatsKey)
@@ -325,6 +335,10 @@ class _ChatPageState extends State<ChatPage> {
             onSendPressed: _handleSendPressed,
             showUserAvatars: true,
             showUserNames: true,
+            onMessageLongPress: (context, p1) {
+
+         
+            },
             user: _user,
           );
         },

@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:twyshe/screens/home.dart';
+import 'package:twyshe/classes/country.dart';
+import 'package:twyshe/screens/countries.dart';
 import 'package:twyshe/screens/profile.dart';
 
 import '../utils/Assist.dart';
@@ -18,6 +19,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   String countryPrefix = '+260';
+  String countryName = 'Zambia';
+
   int stage = 1;
   bool _registrationComplete = false;
 
@@ -36,37 +39,17 @@ class _RegisterPageState extends State<RegisterPage> {
     return '$countryPrefix${_phoneController.text}';
   }
 
-  void saveProfie() {
-    //Do not include the + in the number when saving
-    Assist.registerUser(_getFullNumber().substring(1));
-
-    //show home page
-    if (mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const HomePage(title: Assist.appName),
-        ),
-      );
-    }
-  }
 
   Future<void> _showSaveProfille() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => const ProfilePage(
-                title: 'Update Profile',
-              )),
-    );
 
-    if (!mounted) return;
-
-    if (result == null || result != 0) {
-      Assist.showSnackBar(
-          context, "Please set your nickname and PIN to proceed");
-    } else {
-      saveProfie();
-    }
+    Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+            builder: (_) => ProfilePage(
+                  title: 'Update Profile',
+                  phoneNumber: _getFullNumber(),
+                )),
+        (route) => false);
   }
 
   ///Verifies the code the user has entered
@@ -143,6 +126,25 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  Future<void> _showChooseCountry() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) => const CountryPage(
+                title: 'Choose Country',
+              )),
+    );
+
+    if (result != null) {
+      TwysheCountry country = result as TwysheCountry;
+
+      setState(() {
+        countryName = country.countryName;
+        countryPrefix = country.countryCode;
+      });
+    }
+  }
+
   ///Gets the view based on the current state
   Widget _getStageView() {
     if (stage == 1) {
@@ -170,13 +172,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         'To start, please enter your mobile phone number',
                         style: TextStyle(fontSize: 12)),
                     TextButton(
-                      style: TextButton.styleFrom(
-                        textStyle: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
-                      ),
-                      child: const Text('Zambia'),
-                      onPressed: () => Assist.log('Country pressed'),
-                    ),
+                        style: TextButton.styleFrom(
+                          textStyle: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        child: Text(countryName),
+                        onPressed: () => _showChooseCountry()),
                     TextFormField(
                       controller: _phoneController,
                       decoration: InputDecoration(

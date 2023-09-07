@@ -4,8 +4,10 @@ import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/chat.dart';
 import 'package:twyshe/screens/discussions.dart';
-import 'package:twyshe/screens/profile.dart';
+import 'package:twyshe/screens/facilities.dart';
+import 'package:twyshe/screens/facility_map.dart';
 import 'package:twyshe/screens/resources.dart';
+import 'package:twyshe/screens/settings.dart';
 import 'package:twyshe/utils/assist.dart';
 
 class HomePage extends StatefulWidget {
@@ -28,6 +30,7 @@ class _HomePageState extends State<HomePage> {
   String nickname = '';
   String phone = '';
   String pn = '';
+  String color = '';
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       nickname = profile.nickname;
       phone = profile.phone;
+      color =profile.color;
       pn = profile.pnPhone;
     });
   }
@@ -69,8 +73,6 @@ class _HomePageState extends State<HomePage> {
           builder: (context) => ChatPage(conversation: conversation),
         ),
       );
-
-      
     }).onError((error, stackTrace) {
       Assist.showSnackBar(
           context, 'Unable to start the chat. Please try again');
@@ -113,7 +115,21 @@ class _HomePageState extends State<HomePage> {
           }
         } else if (index >= 2 && index <= 4) {
           _showUpdateProfile();
+        } else if (index == 6) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const FacilityPage(title: 'Facilities'),
+            ),
+          );
         } else if (index == 7) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const FacilityMap(),
+            ),
+          );
+        } else if (index == 8) {
           Assist.removeUser();
         }
       },
@@ -121,15 +137,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _showUpdateProfile() async {
-    final result = await Navigator.push(
+
+    await Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => const ProfilePage(
+          builder: (context) => const SettingsPage(
                 title: 'Update Profile',
               )),
     );
 
     _setUser();
+    
   }
 
   ListView _getHomeContent(BuildContext context) {
@@ -141,14 +159,22 @@ class _HomePageState extends State<HomePage> {
         _tile(context, 2, nickname, 'Your nickname. Tap to change', Icons.face),
         _tile(context, 3, 'My Color', 'Your color. Tap to change',
             Icons.color_lens,
-            mycolor: Colors.orange),
+            mycolor: color == '' ? Colors.purple: Assist.getHexColor(color)),
         _tile(context, 4, 'PIN', 'Your PIN secures your app. Tap to change',
             Icons.key_rounded),
         _tile(context, 5, phone,
             'Your phone number. Your number cannot be changed', Icons.phone),
         const Divider(),
-        _tile(context, 6, 'Help', 'View help information', Icons.help),
-        _tile(context, 7, 'About', 'See version information about this app',
+        _tile(context, 6, 'Facilities',
+            'View facilities providing SRH services', Icons.local_hospital),
+        const Divider(),
+        _tile(context, 7, 'Map', 'View a map for facilities', Icons.map),
+        const Divider(),
+        _tile(context, 8, 'Logout', 'Remove your account from this device',
+            Icons.remove_circle_outline_outlined),
+        const Divider(),
+        _tile(context, 9, 'Help', 'View help information', Icons.help),
+        _tile(context, 10, 'About', 'See version information about this app',
             Icons.info),
       ],
     );

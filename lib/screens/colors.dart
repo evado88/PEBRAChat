@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:twyshe/classes/facility.dart';
+import 'package:twyshe/classes/color.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
+import 'package:twyshe/utils/assist.dart';
 
-class FacilityPage extends StatefulWidget {
+class ColorPage extends StatefulWidget {
   final String title;
 
-  const FacilityPage({super.key, required this.title});
+  const ColorPage({super.key, required this.title});
 
   @override
-  State<FacilityPage> createState() => _FacilityPageState();
+  State<ColorPage> createState() => _ColorPageState();
 }
 
-class _FacilityPageState extends State<FacilityPage> {
-  List<TwysheFacility> items = [];
+class _ColorPageState extends State<ColorPage> {
+  List<TwysheColor> items = [];
 
   bool loading = true;
   bool succeeded = false;
@@ -29,11 +30,11 @@ class _FacilityPageState extends State<FacilityPage> {
       loading = true;
     });
 
-    TwysheTaskResult rs = await TwysheAPI.fetchTwysheFacilities();
+    TwysheTaskResult rs = await TwysheAPI.fetchTwysheColors();
 
     if (rs.succeeded) {
       setState(() {
-        items = rs.items as List<TwysheFacility>;
+        items = rs.items as List<TwysheColor>;
         succeeded = true;
         loading = false;
       });
@@ -81,16 +82,21 @@ class _FacilityPageState extends State<FacilityPage> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0)),
               child: ListTile(
-                title: Text(items[index].facilityName,
+                title: Text(items[index].colorName,
                     style: const TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 20,
                     )),
-                subtitle: Text(items[index].facilityAddress),
-                leading: Image(
-                  width: 80,
-                  image: NetworkImage(items[index].facilityThumbnailUrl),
+                subtitle: Text(items[index].colorCode),
+                leading: CircleAvatar(
+                  radius: 80,
+                  backgroundColor: Assist.getHexColor(items[index].colorCode),
+                  child: Text(items[index].colorName.substring(0,2).toUpperCase(), 
+                  style: const TextStyle(color: Colors.white)),
                 ),
+                onTap: () {
+                      Navigator.pop(context, items[index].colorCode);
+                },
               ),
             );
           },

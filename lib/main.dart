@@ -3,20 +3,66 @@ import 'package:flutter/material.dart';
 import 'package:twyshe/firebase_options.dart';
 import 'package:twyshe/screens/home.dart';
 import 'package:twyshe/screens/register.dart';
-import 'package:twyshe/utils/Assist.dart';
+import 'package:twyshe/utils/assist.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 //Main entry point for app
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  //Assist.removeUser();// Uncomment in prod
+  ///Assist.removeUser();// Uncomment in prod
   String phone = await Assist.getUser();
+  String token = await Assist.getFCMToken();
+
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
+
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+
+  ///subscribe to all app wide notifications
+  Assist.subscribeTopic(Assist.appCode);
+
+  ///only save the token if its not null and different from current one
+  if (fcmToken != null && token != fcmToken) {
+    Assist.saveFCMToken(fcmToken);
+  }
+
+  FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) {
+    ///save the new token
+    Assist.saveFCMToken(fcmToken);
+  }).onError((err) {
+    // Error getting token.
+    Assist.log('Unable to retrieve refreshed FCM token: $err');
+  });
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    Assist.log('Got a message whilst in the foreground!');
+    Assist.log('Message data: ${message.data}');
+
+    if (message.notification != null) {
+      Assist.log(
+          'Message also contained a notification: ${message.notification!.toMap()}');
+    }
+  });
 
   runApp(MyApp(
     registeredPhone: phone,
   ));
+}
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  Assist.log("Handling a background message: ${message.toMap()}");
 }
 
 class MyApp extends StatelessWidget {
@@ -42,7 +88,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.purple,
       ),
       home: Assist.isRegistered(registeredPhone)
-          ? const HomePage(title: 'Twyshe Messenger')
+          ? const HomePage(title: Assist.appName)
           : const RegisterPage(title: 'Register'),
       //initialRoute: '/', this is not needed if home is defined
       routes: {
