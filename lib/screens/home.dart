@@ -25,7 +25,7 @@ class _HomePageState extends State<HomePage> {
   final DiscussionsPage _discussionPage =
       const DiscussionsPage(title: 'Discussions');
 
-  final ResourcePage _resourcePage = const ResourcePage(title: 'Resources');
+  final ResourcesPage _resourcePage = const ResourcesPage(title: 'Resources');
 
   String nickname = '';
   String phone = '';
@@ -119,7 +119,7 @@ class _HomePageState extends State<HomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const FacilityPage(title: 'Facilities'),
+              builder: (context) => const FacilitiesPage(title: 'Facilities'),
             ),
           );
         } else if (index == 7) {

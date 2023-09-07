@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/resource.dart';
+import 'package:twyshe/screens/resource.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 
-class ResourcePage extends StatefulWidget {
+class ResourcesPage extends StatefulWidget {
   final String title;
 
-  const ResourcePage({super.key, required this.title});
+  const ResourcesPage({super.key, required this.title});
 
   @override
-  State<ResourcePage> createState() => _ResourcePageState();
+  State<ResourcesPage> createState() => _ResourcesPageState();
 }
 
-class _ResourcePageState extends State<ResourcePage> {
+class _ResourcesPageState extends State<ResourcesPage> {
   List<TwysheResource> items = [];
 
   bool loading = true;
@@ -92,6 +93,15 @@ class _ResourcePageState extends State<ResourcePage> {
                   backgroundImage:
                       NetworkImage(items[index].resourceThumbnailUrl),
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ResourcePage(resource: items[index]),
+                    ),
+                  );
+                },
               ),
             );
           },

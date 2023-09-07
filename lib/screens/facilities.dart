@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/facility.dart';
+import 'package:twyshe/screens/facility.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 
-class FacilityPage extends StatefulWidget {
+class FacilitiesPage extends StatefulWidget {
   final String title;
 
-  const FacilityPage({super.key, required this.title});
+  const FacilitiesPage({super.key, required this.title});
 
   @override
-  State<FacilityPage> createState() => _FacilityPageState();
+  State<FacilitiesPage> createState() => _FacilitiesPageState();
 }
 
-class _FacilityPageState extends State<FacilityPage> {
+class _FacilitiesPageState extends State<FacilitiesPage> {
   List<TwysheFacility> items = [];
 
   bool loading = true;
@@ -91,6 +92,15 @@ class _FacilityPageState extends State<FacilityPage> {
                   width: 80,
                   image: NetworkImage(items[index].facilityThumbnailUrl),
                 ),
+                onTap: () {
+                     Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          FacilityPage(facility: items[index]),
+                    ),
+                  );
+                },
               ),
             );
           },

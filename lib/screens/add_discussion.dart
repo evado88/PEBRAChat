@@ -20,10 +20,10 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _titleController =
-      TextEditingController(text: 'PrEP Sideffects');
+      TextEditingController();
 
   final TextEditingController _descrtiptionController =
-      TextEditingController(text: 'The side effects are good');
+      TextEditingController();
 
   ///Adds a new discussion to firestore
   void _addDiscussion(String title, String description) async {

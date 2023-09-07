@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 ///Contains common properties and methods for the entire application
 ///Date: 16 August 2023
@@ -18,7 +19,7 @@ class Assist {
   static const appCode = 'Twyshe';
 
   ///The active api URL of the app
-  static const apiUrl = 'http://10.0.2.2:5000';
+  static const apiUrl = 'http://nkoleevans.pythonanywhere.com';
 
   //The local URL for the api
   static const localApiUrl = 'http://10.0.2.2:5000';
@@ -260,8 +261,7 @@ class Assist {
     FirebaseMessaging.instance
         .subscribeToTopic(topic)
         .then((value) =>
-             Assist.log('Successfully subscribed to the topic $topic')
-            )
+            Assist.log('Successfully subscribed to the topic $topic'))
         .onError((error, stackTrace) =>
             Assist.log('Unable to subscribe to the topic $topic: $error'));
   }
@@ -273,11 +273,47 @@ class Assist {
     FirebaseMessaging.instance
         .unsubscribeFromTopic(topic)
         .then((value) =>
-            Assist.log('Successfully unsubscribed to the topic $topic')
-            )
+            Assist.log('Successfully unsubscribed to the topic $topic'))
         .onError((error, stackTrace) =>
             Assist.log('Unable to unsubscribe to the topic $topic: $error'));
   }
 
-  
+  ///Opens the specified link as a web link
+  static void openWebLink(BuildContext context, String link) async {
+    Assist.log('Starting to open the provided web link: $link');
+
+    final Uri url = Uri.parse(link);
+
+    if (!await launchUrl(url)) {
+      Assist.showSnackBar(context, 'Unable to open the specified link: $link');
+    }
+  }
+
+  ///Opens the specified link as an email link
+  static void openEmailLink(BuildContext context, String email) async {
+    Assist.log('Starting to open the provided email: $email');
+
+    String link = 'mailto:$email?Subject=Inquiry';
+
+    final Uri url = Uri.parse(link);
+
+    if (!await launchUrl(url)) {
+      Assist.showSnackBar(
+          context, 'Unable to open the specified email address: $email');
+    }
+  }
+
+   ///Opens the specified link as a phone link
+  static void openTelephoneLink(BuildContext context, String phone) async {
+    Assist.log('Starting to open the provided phone: $phone');
+
+    String link = 'tel:$phone';
+
+    final Uri url = Uri.parse(link);
+
+    if (!await launchUrl(url)) {
+      Assist.showSnackBar(
+          context, 'Unable to dial the specified phone: $phone');
+    }
+  }
 }
