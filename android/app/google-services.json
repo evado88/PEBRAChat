@@ -44,6 +44,42 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:878075714362:android:7e09b45a8d46f22fcd0e03",
+        "android_client_info": {
+          "package_name": "com.goodnewsdaily"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeiRtedP5QHXxWBHuLj4UawAlo1n5umU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "878075714362-ckmmkcgevlfnn93i704svfg2in1ngohh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "878075714362-0dvoc33dhdhl6m48b873qep6c43ehvq6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kitchen"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:878075714362:android:e712884b14be3273cd0e03",
         "android_client_info": {
           "package_name": "com.mysafespace"

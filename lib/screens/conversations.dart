@@ -2,13 +2,14 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/discussion.dart';
-import 'package:twyshe/screens/add_discussion.dart';
+import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/discussion.dart';
 import 'package:twyshe/utils/assist.dart';
 
-class DiscussionsPage extends StatefulWidget {
-  const DiscussionsPage({super.key, required this.title});
+class ConversationsPage extends StatefulWidget {
+  const ConversationsPage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -22,22 +23,20 @@ class DiscussionsPage extends StatefulWidget {
   final String title;
 
   @override
-  State<DiscussionsPage> createState() => _DiscussionsPageState();
+  State<ConversationsPage> createState() => _ConversationsPageState();
 }
 
-class _DiscussionsPageState extends State<DiscussionsPage> {
-  // Setting reference to 'tasks' collection
-  final Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance
-      .collection(Assist.firestoreAppCode)
-      .doc(Assist.firestoreDiscussionsKey)
-      .collection(Assist.firestoreDiscussionsKey)
-      .where('status', isEqualTo: Assist.messageStateActive)
-      .orderBy('posted', descending: true)
-      .snapshots();
+class _ConversationsPageState extends State<ConversationsPage> {
+  late final TwysheUser _currentUser;
 
   @override
   void initState() {
     super.initState();
+    _setUser();
+  }
+
+  void _setUser() async {
+    _currentUser = await Assist.getUserProfile();
   }
 
   @override
@@ -45,7 +44,14 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
     return Scaffold(
       backgroundColor: Colors.purple,
       body: StreamBuilder<QuerySnapshot>(
-        stream: _usersStream,
+        stream: FirebaseFirestore.instance
+            .collection(Assist.firestoreAppCode)
+            .doc(Assist.firestoreConversationsKey)
+            .collection(Assist.firestoreConversationsKey)
+            .doc(_currentUser.phone)
+            .collection(Assist.firestoreConversationsKey)
+            .orderBy('posted', descending: true)
+            .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('Something went wrong'));
@@ -63,20 +69,27 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                   Map<String, dynamic> data =
                       document.data()! as Map<String, dynamic>;
 
+                  int count = data['count'] as int;
                   String ref = document.id;
 
-                  String title = data['title'];
-                  String description = data['description'];
-
-                  String phone = data['user'];
-                  String nickname = data['nickname'];
-                  String color = data['color'];
-
-                  int posts = data['posts'] as int;
+                  String message = data['message'];
+                  String name = data['name'];
+                  String owner = data['owner'];
                   Timestamp timestamp = data['posted'] as Timestamp;
+                  String recipient = data['recipient'];
+                  int status = data['status'] as int;
 
-                  TwysheDiscussion discussion = TwysheDiscussion(ref, title,
-                      description, phone, nickname, color, posts, timestamp);
+              
+
+                  TwysheConversation conversation = TwysheConversation(
+                      ref,
+                      count,
+                      message,
+                      name,
+                      owner,
+                      timestamp,
+                      recipient,
+                      status);
 
                   String date =
                       DateFormat('d MMM yyy H:m').format(timestamp.toDate());
@@ -88,26 +101,27 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0)),
                         child: ListTile(
-                          title: Text(discussion.title),
-                          subtitle: Text(posts == 0
-                              ? 'No Posts'
-                              : '$posts Posts • $nickname • $date'),
+                          title: Text(conversation.name),
+                          subtitle: Text(conversation.message.isEmpty
+                              ? '(no message)'
+                              : '${conversation.message} • $date'),
                           leading: CircleAvatar(
                               radius: 20,
-                              backgroundColor: discussion.color == ''
-                                  ? Colors.purple
-                                  : Assist.getHexColor(discussion.color),
+                              backgroundColor: Colors.purple,
                               child: Text(
-                                nickname.toUpperCase().substring(0, 2),
+                                name.toUpperCase().substring(0, 2),
                                 style: const TextStyle(color: Colors.white),
                               )),
                           onTap: () {
+
+/*
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) =>
                                     DiscussionPage(discussion: discussion),
                               ),
-                            );
+                            );*/
+
                           },
                         ),
                       ));
@@ -116,18 +130,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 .cast(),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: (() {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  const AddDiscussionPage(title: 'Add Discussion'),
-            ),
-          );
-        }),
-        tooltip: 'Add Discussion',
-        child: const Icon(Icons.add),
       ),
     );
   }

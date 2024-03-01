@@ -1,18 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-///Represents a discussion chat in the app
+///Represents a conversation in the app
 class TwysheConversation{
 
-final String ref; 
-final String user; 
-final String nickname; 
-final String pn;
+final int count;
+final String id; 
+final String message; 
+final String name; 
+final String owner; 
 final Timestamp posted;
+final String recipient;
 final int status;
-final int posts;
 
 
 ///Creates a new conversation
-TwysheConversation(this.ref, this.user, this.nickname, this.pn, this.posted, this.status, this.posts);
+TwysheConversation(this.id, this.count, this.message, this.name, this.owner, this.posted, this.recipient, this.status);
 
 }

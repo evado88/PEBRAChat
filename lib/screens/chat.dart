@@ -9,10 +9,10 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
-import 'package:twyshe/utils/Assist.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:twyshe/utils/assist.dart';
 import 'package:uuid/uuid.dart';
 
 class ChatPage extends StatefulWidget {
@@ -202,6 +202,38 @@ class _ChatPageState extends State<ChatPage> {
     _postMessage(message.text);
   }
 
+  ///update the conversation
+  void _updateConversations(bool current, String message, int count) async {
+    String user = current ? twysheUser.phone : widget.conversation.pn;
+    String recipient = current ? widget.conversation.pn : twysheUser.phone;
+    String name = current ? twysheUser.nickname : 'Peer Navigator';
+
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationsKey)
+        .collection(Assist.firestoreConversationsKey)
+        .doc(user)
+        .collection(Assist.firestoreConversationsKey)
+        .doc(recipient)
+        .set(<String, dynamic>{
+      'id': widget.conversation.ref,
+      'owner': user,
+      'recipient': recipient,
+      'name': name,
+      'count': count,
+      'message': message,
+      'posted': Timestamp.now(),
+      'status': 1,
+      //'posts': 0,
+    }).then((value) {
+      Assist.log(
+          'The conversation \'$widget.conversation.ref\' has been successfully added!');
+    }).onError((error, stackTrace) {
+      Assist.log(
+          'Unable to update the conversation for user $user and recipient $recipient: $error');
+    });
+  }
+
   ///Adds the message to the conversation on firestore
   void _postMessage(String text) async {
     Map<String, dynamic> author = {
@@ -210,8 +242,13 @@ class _ChatPageState extends State<ChatPage> {
       'lastname': null,
       'color': twysheUser.color,
     };
+
     FirebaseFirestore.instance
-        .collection(Assist.firestireConversationChatsKey)
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationChatsKey)
+        .collection(Assist.firestoreConversationChatsKey)
+        .doc(widget.conversation.ref)
+        .collection(Assist.firestoreConversationChatsKey)
         .add(<String, dynamic>{
       'conversation': widget.conversation.ref,
       'author': author,
@@ -222,29 +259,16 @@ class _ChatPageState extends State<ChatPage> {
       'type': MessageType.text.name,
     }).then((resPost) {
       Assist.log(
-          'The message \'$text\' has been successfully posted to the comversation \'${widget.conversation.nickname}\'');
+          'The message \'$text\' has been successfully posted to the conversation \'${widget.conversation.nickname}\'');
 
       FirebaseFirestore.instance
-          .collection(Assist.firestireConversationChatsKey)
+          .collection(Assist.firestoreConversationChatsKey)
           .where('conversation', isEqualTo: widget.conversation.ref)
           .count()
           .get()
           .then((resCount) {
-        Map<String, dynamic> newvalues = {
-          'posts': resCount.count,
-        };
-
-        FirebaseFirestore.instance
-            .collection(Assist.firestireConversationsKey)
-            .doc(widget.conversation.ref)
-            .update(newvalues)
-            .then((updateRes) {
-          Assist.log(
-              'The count for conversation \'${widget.conversation.ref}\' has been successfully updated to {$resCount.count}');
-        }).onError((errorUpdate, stackTrace) {
-          Assist.log(
-              'Error updating the count for conversation \'${widget.conversation.ref}\': $errorUpdate');
-        });
+        _updateConversations(true, text, resCount.count);
+        _updateConversations(false, text, resCount.count);
       }).onError((errorCount, st) {
         Assist.log(
             'Error counting posts for the conversation \'${widget.conversation.ref}\': $errorCount');
@@ -261,8 +285,8 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: ListTile(
-          title: const Text('My Peer Navigator',
-              style: TextStyle(color: Colors.white)),
+          title: Text(widget.conversation.nickname,
+              style: const TextStyle(color: Colors.white)),
           subtitle: Text('${widget.conversation.pn} - Last seen Today ',
               style: const TextStyle(color: Colors.white)),
         ),
@@ -278,8 +302,11 @@ class _ChatPageState extends State<ChatPage> {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection(Assist.firestireConversationChatsKey)
-            .where('conversation', isEqualTo: widget.conversation.ref)
+            .collection(Assist.firestoreAppCode)
+            .doc(Assist.firestoreConversationChatsKey)
+            .collection(Assist.firestoreConversationChatsKey)
+            .doc(widget.conversation.ref)
+            .collection(Assist.firestoreConversationChatsKey)
             .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -335,10 +362,7 @@ class _ChatPageState extends State<ChatPage> {
             onSendPressed: _handleSendPressed,
             showUserAvatars: true,
             showUserNames: true,
-            onMessageLongPress: (context, p1) {
-
-         
-            },
+            onMessageLongPress: (context, p1) {},
             user: _user,
           );
         },

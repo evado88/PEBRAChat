@@ -249,7 +249,11 @@ class _DiscussionPageState extends State<DiscussionPage> {
       'color': twysheUser.color,
     };
     FirebaseFirestore.instance
-        .collection(Assist.firestireDiscussionPostsKey)
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreDiscussionPostsKey)
+        .collection(Assist.firestoreDiscussionPostsKey)
+        .doc(widget.discussion.ref)
+        .collection(Assist.firestoreDiscussionPostsKey)
         .add(<String, dynamic>{
       'discussion': widget.discussion.ref,
       'author': author,
@@ -268,13 +272,16 @@ class _DiscussionPageState extends State<DiscussionPage> {
         Assist.subscribeTopic(widget.discussion.ref);
       }
       //send  notification
-      TwysheAPI.sendTopicMessage(
-          widget.discussion.ref, '${twysheUser.nickname} - ${widget.discussion.title}', text);
+      TwysheAPI.sendTopicMessage(widget.discussion.ref,
+          '${twysheUser.nickname} - ${widget.discussion.title}', text);
 
       ///update count
       FirebaseFirestore.instance
-          .collection(Assist.firestireDiscussionPostsKey)
-          .where('discussion', isEqualTo: widget.discussion.ref)
+          .collection(Assist.firestoreAppCode)
+          .doc(Assist.firestoreDiscussionPostsKey)
+          .collection(Assist.firestoreDiscussionPostsKey)
+          .doc(widget.discussion.ref)
+          .collection(Assist.firestoreDiscussionPostsKey)
           .where('state', isEqualTo: Assist.messageStateActive)
           .count()
           .get()
@@ -284,7 +291,9 @@ class _DiscussionPageState extends State<DiscussionPage> {
         };
 
         FirebaseFirestore.instance
-            .collection(Assist.firestireDiscussionsKey)
+            .collection(Assist.firestoreAppCode)
+            .doc(Assist.firestoreDiscussionsKey)
+            .collection(Assist.firestoreDiscussionsKey)
             .doc(widget.discussion.ref)
             .update(newvalues)
             .then((updateRes) {
@@ -308,7 +317,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
   ///Adds the message to the discussion on firestore
   void _removeDiscussionMessage(String id) async {
     FirebaseFirestore.instance
-        .collection(Assist.firestireDiscussionPostsKey)
+        .collection(Assist.firestoreDiscussionPostsKey)
         .doc(id)
         .update(<String, dynamic>{
       'state': Assist.messageStateDeleted,
@@ -317,7 +326,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
           'The message id \'$id\' has been successfully deleted from the discussion \'${widget.discussion.nickname}\'');
 
       FirebaseFirestore.instance
-          .collection(Assist.firestireDiscussionPostsKey)
+          .collection(Assist.firestoreDiscussionPostsKey)
           .where('discussion', isEqualTo: widget.discussion.ref)
           .where('state', isEqualTo: Assist.messageStateActive)
           .count()
@@ -328,7 +337,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
         };
 
         FirebaseFirestore.instance
-            .collection(Assist.firestireDiscussionsKey)
+            .collection(Assist.firestoreDiscussionsKey)
             .doc(widget.discussion.ref)
             .update(newvalues)
             .then((updateRes) {
@@ -355,8 +364,11 @@ class _DiscussionPageState extends State<DiscussionPage> {
       appBar: AppBar(
         title: ListTile(
           title: Text(widget.discussion.title,
-              style: const TextStyle(color: Colors.white)),
-          subtitle: const Text('All posts here are anonymous',
+              style: const TextStyle(
+                color: Colors.white,
+              ),
+              maxLines: 1),
+          subtitle: const Text('Posts are anonymous',
               style: TextStyle(color: Colors.white)),
         ),
         actions: [
@@ -390,8 +402,11 @@ class _DiscussionPageState extends State<DiscussionPage> {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection(Assist.firestireDiscussionPostsKey)
-            .where('discussion', isEqualTo: widget.discussion.ref)
+            .collection(Assist.firestoreAppCode)
+            .doc(Assist.firestoreDiscussionPostsKey)
+            .collection(Assist.firestoreDiscussionPostsKey)
+            .doc(widget.discussion.ref)
+            .collection(Assist.firestoreDiscussionPostsKey)
             .where('state', isEqualTo: Assist.messageStateActive)
             .orderBy('createdAt', descending: true)
             .snapshots(),

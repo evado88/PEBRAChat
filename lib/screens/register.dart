@@ -23,14 +23,15 @@ class _RegisterPageState extends State<RegisterPage> {
 
   int stage = 1;
   bool _registrationComplete = false;
+  bool _isLoading = false;
 
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _phoneController =
-      TextEditingController(text: '977123451');
+      TextEditingController(text: '');
 
   final TextEditingController _codeController =
-      TextEditingController(text: '123456');
+      TextEditingController(text: '');
 
   String _verificationId = '';
 
@@ -39,9 +40,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return '$countryPrefix${_phoneController.text}';
   }
 
-
   Future<void> _showSaveProfille() async {
-
     Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
@@ -88,6 +87,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   ///Starts the phone number sign in process
   void signIn() async {
+
+    setState(() {
+      _isLoading = true;
+    });
+
     Assist.log(
         'Starting phone number auth for phone number ${_getFullNumber()}');
 
@@ -204,7 +208,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                         onPressed: () {
                           // Validate returns true if the form is valid, or false otherwise.
-                          if (_formKey.currentState!.validate()) {
+                          if (_formKey.currentState!.validate() && !_isLoading) {
                             // If the form is valid, display a snackbar. In the real world,
                             // you'd often call a server or save the information in a database.
 
@@ -212,7 +216,14 @@ class _RegisterPageState extends State<RegisterPage> {
                             signIn();
                           }
                         },
-                        child: const Text('PROCEED'),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 30,
+                                width: 30,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 3, color: Colors.white),
+                              )
+                            : const Text('PROCEED'),
                       ),
                     ),
                   ],

@@ -19,18 +19,18 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
 
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _titleController =
-      TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
 
-  final TextEditingController _descrtiptionController =
-      TextEditingController();
+  final TextEditingController _descrtiptionController = TextEditingController();
 
   ///Adds a new discussion to firestore
   void _addDiscussion(String title, String description) async {
     TwysheUser user = await Assist.getUserProfile();
 
     FirebaseFirestore.instance
-        .collection(Assist.firestireDiscussionsKey)
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreDiscussionsKey)
+        .collection(Assist.firestoreDiscussionsKey)
         .add(<String, dynamic>{
       'title': title,
       'description': description,
@@ -124,7 +124,7 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
                       labelText: 'Description',
                     ),
                     textInputAction: TextInputAction.done,
-                    keyboardType: TextInputType.phone,
+                    keyboardType: TextInputType.text,
                     // The validator receives the text that the user has entered.
                     validator: (value) {
                       if (value == null || value.isEmpty) {

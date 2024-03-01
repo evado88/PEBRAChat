@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/chat.dart';
+import 'package:twyshe/screens/conversations.dart';
 import 'package:twyshe/screens/discussions.dart';
 import 'package:twyshe/screens/facilities.dart';
 import 'package:twyshe/screens/facility_map.dart';
@@ -27,6 +28,9 @@ class _HomePageState extends State<HomePage> {
 
   final ResourcesPage _resourcePage = const ResourcesPage(title: 'Resources');
 
+  final ConversationsPage _conversationsPage =
+      const ConversationsPage(title: 'Conversations');
+
   String nickname = '';
   String phone = '';
   String pn = '';
@@ -44,41 +48,22 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       nickname = profile.nickname;
       phone = profile.phone;
-      color =profile.color;
+      color = profile.color;
       pn = profile.pnPhone;
     });
   }
 
   ///Adds a new discussion to firestore
-  void _startConversation(String conversationId) async {
-    FirebaseFirestore.instance
-        .collection(Assist.firestireConversationsKey)
-        .doc(conversationId)
-        .set(<String, dynamic>{
-      'user': phone,
-      'nickname': nickname,
-      'pn': pn,
-      'posted': Timestamp.now(),
-      'status': 1,
-      'posts': 0,
-    }).then((value) {
-      Assist.log(
-          'The conversation \'$conversationId\' has been successfully added!');
+  void _startConversation(
+      String conversationId, bool isUser, bool startConversation) async {
+    TwysheConversation conversation = TwysheConversation(
+        conversationId, phone, nickname, pn, Timestamp.now(), 1, 0);
 
-      TwysheConversation conversation = TwysheConversation(
-          conversationId, phone, nickname, pn, Timestamp.now(), 1, 0);
-
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => ChatPage(conversation: conversation),
-        ),
-      );
-    }).onError((error, stackTrace) {
-      Assist.showSnackBar(
-          context, 'Unable to start the chat. Please try again');
-
-      Assist.log('Unable to add the conversation: $error');
-    });
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChatPage(conversation: conversation),
+      ),
+    );
   }
 
   ListTile _tile(BuildContext context, int index, String title, String subtitle,
@@ -108,10 +93,17 @@ class _HomePageState extends State<HomePage> {
                 context, 'Sorry! But you cannot chat with yourself!');
           } else {
             //start conversation
+
+            Assist.log(
+                'Starting conversation for user  peer navigator $pn and $phone and $conversationId computed id');
+
+            _startConversation(conversationId, false, false);
+
+            //start conversation
             Assist.log(
                 'Starting conversation for user $phone and peer navigator $pn and $conversationId computed id');
 
-            _startConversation(conversationId);
+            _startConversation(conversationId, true, true);
           }
         } else if (index >= 2 && index <= 4) {
           _showUpdateProfile();
@@ -137,7 +129,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _showUpdateProfile() async {
-
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -147,7 +138,6 @@ class _HomePageState extends State<HomePage> {
     );
 
     _setUser();
-    
   }
 
   ListView _getHomeContent(BuildContext context) {
@@ -159,7 +149,7 @@ class _HomePageState extends State<HomePage> {
         _tile(context, 2, nickname, 'Your nickname. Tap to change', Icons.face),
         _tile(context, 3, 'My Color', 'Your color. Tap to change',
             Icons.color_lens,
-            mycolor: color == '' ? Colors.purple: Assist.getHexColor(color)),
+            mycolor: color == '' ? Colors.purple : Assist.getHexColor(color)),
         _tile(context, 4, 'PIN', 'Your PIN secures your app. Tap to change',
             Icons.key_rounded),
         _tile(context, 5, phone,
@@ -185,6 +175,8 @@ class _HomePageState extends State<HomePage> {
       return _getHomeContent(context);
     } else if (index == 1) {
       return _discussionPage;
+    } else if (index == 2) {
+      return _conversationsPage;
     } else {
       return _resourcePage;
     }
@@ -206,6 +198,7 @@ class _HomePageState extends State<HomePage> {
         child: _getView(context, _selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -214,6 +207,10 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.people_alt),
             label: 'Discussions',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.messenger_outline_sharp),
+            label: 'Chats',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.school),

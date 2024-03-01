@@ -51,17 +51,20 @@ class Assist {
   ///The key used in preferences for a peer navigators phone
   static const pnuserKey = 'pnphone';
 
+  ///The key used in firestore to store data for the app
+  static const firestoreAppCode = 'twyshe';
+
   ///The key used in firestore to store discussions
-  static const firestireDiscussionsKey = 'twyshe-discussions';
+  static const firestoreDiscussionsKey = 'twyshe-discussions';
 
   ///The key used in firestore to store posts for a  discussion
-  static const firestireDiscussionPostsKey = 'twyshe-discussion-posts';
+  static const firestoreDiscussionPostsKey = 'twyshe-discussion-posts';
 
   ///The key used in firestore to store conversations
-  static const firestireConversationsKey = 'twyshe-conversations';
+  static const firestoreConversationsKey = 'twyshe-conversations';
 
   ///The key used in firestore to store the chats for a conversation
-  static const firestireConversationChatsKey = 'twyshe-chats';
+  static const firestoreConversationChatsKey = 'twyshe-chats';
 
   ///The status of the message which is active
   static const messageStateActive = 1;
@@ -195,6 +198,8 @@ class Assist {
     await prefs.setString(Assist.colorKey, color);
 
     int rnd = Random().nextInt(7);
+
+
     String pnPhone = '26097712300${rnd + 1}';
 
     await prefs.setString(Assist.pnnicknamekey, 'mypn');
