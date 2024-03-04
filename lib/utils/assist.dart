@@ -18,6 +18,12 @@ class Assist {
   ///The code of the app
   static const appCode = 'Twyshe';
 
+  ///The key used in preferences for a color
+  static const defaultColor = '#7B1FA2';
+
+  ///The key used in preferences for a color
+  static const defaultName = 'Peer Navigator';
+
   ///The active api URL of the app
   static const apiUrl = 'http://nkoleevans.pythonanywhere.com';
 
@@ -199,7 +205,6 @@ class Assist {
 
     int rnd = Random().nextInt(7);
 
-
     String pnPhone = '26097712300${rnd + 1}';
 
     await prefs.setString(Assist.pnnicknamekey, 'mypn');
@@ -308,7 +313,7 @@ class Assist {
     }
   }
 
-   ///Opens the specified link as a phone link
+  ///Opens the specified link as a phone link
   static void openTelephoneLink(BuildContext context, String phone) async {
     Assist.log('Starting to open the provided phone: $phone');
 

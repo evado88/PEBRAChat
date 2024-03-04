@@ -20,7 +20,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
-  String _color = '';
+  String _color = Assist.defaultColor;
 
   final TextEditingController _nicknameController = TextEditingController();
 
@@ -56,8 +56,9 @@ class _ProfilePageState extends State<ProfilePage> {
     Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-            builder: (_) => const HomePage(
+            builder: (_) => HomePage(
                   title: Assist.appName,
+                  user: widget.phoneNumber.substring(1),
                 )),
         (route) => false);
   }

@@ -2,14 +2,14 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:twyshe/classes/chat.dart';
 import 'package:twyshe/classes/converation.dart';
-import 'package:twyshe/classes/discussion.dart';
 import 'package:twyshe/classes/user.dart';
-import 'package:twyshe/screens/discussion.dart';
+import 'package:twyshe/screens/chat.dart';
 import 'package:twyshe/utils/assist.dart';
 
 class ConversationsPage extends StatefulWidget {
-  const ConversationsPage({super.key, required this.title});
+  const ConversationsPage({super.key, required this.title, required this.user});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -21,13 +21,13 @@ class ConversationsPage extends StatefulWidget {
   // always marked "final".
 
   final String title;
-
+  final String user;
   @override
   State<ConversationsPage> createState() => _ConversationsPageState();
 }
 
 class _ConversationsPageState extends State<ConversationsPage> {
-  late final TwysheUser _currentUser;
+  late TwysheUser _profile;
 
   @override
   void initState() {
@@ -36,7 +36,33 @@ class _ConversationsPageState extends State<ConversationsPage> {
   }
 
   void _setUser() async {
-    _currentUser = await Assist.getUserProfile();
+    TwysheUser currentUser = await Assist.getUserProfile();
+
+    setState(() {
+      _profile = currentUser;
+    });
+  }
+
+  ///Adds a new discussion to firestore
+  void _startConversation(TwysheChat chat) async {
+//TwysheConversation(this.ref, this.user, this.nickname, this.pnPhone, this.posted, this.status, this.posts, this.pnColor, this.pnName);
+
+    TwysheConversation conversation = TwysheConversation(
+        chat.id,
+        _profile.phone,
+        _profile.nickname,
+        chat.otherPhone,
+        chat.posted,
+        chat.status,
+        chat.count,
+        chat.color,
+        chat.otherName);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChatPage(conversation: conversation),
+      ),
+    );
   }
 
   @override
@@ -48,7 +74,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
             .collection(Assist.firestoreAppCode)
             .doc(Assist.firestoreConversationsKey)
             .collection(Assist.firestoreConversationsKey)
-            .doc(_currentUser.phone)
+            .doc(widget.user)
             .collection(Assist.firestoreConversationsKey)
             .orderBy('posted', descending: true)
             .snapshots(),
@@ -69,62 +95,49 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   Map<String, dynamic> data =
                       document.data()! as Map<String, dynamic>;
 
+                  String color = data['color'];
                   int count = data['count'] as int;
-                  String ref = document.id;
-
+                  String ref = data['id'];
                   String message = data['message'];
                   String name = data['name'];
+                  String otherName = data['other_name'];
+                  String otherPhone = data['other_phone'];
                   String owner = data['owner'];
                   Timestamp timestamp = data['posted'] as Timestamp;
-                  String recipient = data['recipient'];
                   int status = data['status'] as int;
 
-              
+                  //TwysheChat(this.color, this.count,  this.id, this.message, this.name, this.otherName, this.otherPhone, this.owner, this.posted, this.status);
 
-                  TwysheConversation conversation = TwysheConversation(
-                      ref,
-                      count,
-                      message,
-                      name,
-                      owner,
-                      timestamp,
-                      recipient,
-                      status);
+                  TwysheChat chat = TwysheChat(color, count, ref, message, name,
+                      otherName, otherPhone, owner, timestamp, status);
 
                   String date =
                       DateFormat('d MMM yyy H:m').format(timestamp.toDate());
 
                   return Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
-                      child: Card(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0)),
-                        child: ListTile(
-                          title: Text(conversation.name),
-                          subtitle: Text(conversation.message.isEmpty
-                              ? '(no message)'
-                              : '${conversation.message} • $date'),
-                          leading: CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.purple,
-                              child: Text(
-                                name.toUpperCase().substring(0, 2),
-                                style: const TextStyle(color: Colors.white),
-                              )),
-                          onTap: () {
-
-/*
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    DiscussionPage(discussion: discussion),
-                              ),
-                            );*/
-
-                          },
-                        ),
-                      ));
+                    padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
+                    child: Card(
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0)),
+                      child: ListTile(
+                        title: Text(chat.otherName),
+                        subtitle: Text(chat.message.isEmpty
+                            ? '${chat.name}: (no message)• $date • $count Messages'
+                            : '${chat.name}: ${chat.message} • $date • $count Messages'),
+                        leading: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.purple,
+                            child: Text(
+                              otherName.toUpperCase().substring(0, 2),
+                              style: const TextStyle(color: Colors.white),
+                            )),
+                        onTap: () {
+                          _startConversation(chat);
+                        },
+                      ),
+                    ),
+                  );
                 })
                 .toList()
                 .cast(),

@@ -88,7 +88,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.purple,
       ),
       home: Assist.isRegistered(registeredPhone)
-          ? const HomePage(title: Assist.appName)
+          ?  HomePage(title: Assist.appName, user: registeredPhone)
           : const RegisterPage(title: 'Register'),
       //initialRoute: '/', this is not needed if home is defined
       routes: {

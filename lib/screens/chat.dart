@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
@@ -26,7 +27,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   // Setting reference to 'tasks' collection
-  late final List<types.Message> _messages = [];
+  List<types.Message> _messages = [];
 
   late final TwysheUser twysheUser;
   late final User _user;
@@ -98,44 +99,8 @@ class _ChatPageState extends State<ChatPage> {
       type: FileType.any,
     );
 
-    if (result != null && result.files.single.path != null) {
-      final message = types.FileMessage(
-        author: _user,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        id: const Uuid().v4(),
-        mimeType: lookupMimeType(result.files.single.path!),
-        name: result.files.single.name,
-        size: result.files.single.size,
-        uri: result.files.single.path!,
-      );
-
-      _addMessage(message);
-    }
-  }
-
-  void _handleImageSelection() async {
-    final result = await ImagePicker().pickImage(
-      imageQuality: 70,
-      maxWidth: 1440,
-      source: ImageSource.gallery,
-    );
-
     if (result != null) {
-      final bytes = await result.readAsBytes();
-      final image = await decodeImageFromList(bytes);
-
-      final message = types.ImageMessage(
-        author: _user,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        height: image.height.toDouble(),
-        id: const Uuid().v4(),
-        name: result.name,
-        size: bytes.length,
-        uri: result.path,
-        width: image.width.toDouble(),
-      );
-
-      _addMessage(message);
+      uploadFileToPebraCloud(result.files[0], MessageType.file);
     }
   }
 
@@ -199,27 +164,25 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _handleSendPressed(types.PartialText message) {
-    _postMessage(message.text);
+    _postMessage(message.text, MessageType.text, null, null, null, null);
   }
 
   ///update the conversation
-  void _updateConversations(bool current, String message, int count) async {
-    String user = current ? twysheUser.phone : widget.conversation.pn;
-    String recipient = current ? widget.conversation.pn : twysheUser.phone;
-    String name = current ? twysheUser.nickname : 'Peer Navigator';
-
+  void _updateOwnConversation(String? message, int count) async {
     FirebaseFirestore.instance
         .collection(Assist.firestoreAppCode)
         .doc(Assist.firestoreConversationsKey)
         .collection(Assist.firestoreConversationsKey)
-        .doc(user)
+        .doc(twysheUser.phone)
         .collection(Assist.firestoreConversationsKey)
-        .doc(recipient)
+        .doc(widget.conversation.pnPhone)
         .set(<String, dynamic>{
       'id': widget.conversation.ref,
-      'owner': user,
-      'recipient': recipient,
-      'name': name,
+      'owner': twysheUser.phone,
+      'color': twysheUser.color,
+      'other_phone': widget.conversation.pnPhone,
+      'other_name': widget.conversation.pnName,
+      'name': 'You',
       'count': count,
       'message': message,
       'posted': Timestamp.now(),
@@ -230,12 +193,130 @@ class _ChatPageState extends State<ChatPage> {
           'The conversation \'$widget.conversation.ref\' has been successfully added!');
     }).onError((error, stackTrace) {
       Assist.log(
-          'Unable to update the conversation for user $user and recipient $recipient: $error');
+          'Unable to update the conversation for user ${twysheUser.phone} and recipient ${widget.conversation.pnPhone}: $error');
     });
   }
 
+  void _updateOtherConversation(String? message, int count) async {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationsKey)
+        .collection(Assist.firestoreConversationsKey)
+        .doc(widget.conversation.pnPhone)
+        .collection(Assist.firestoreConversationsKey)
+        .doc(twysheUser.phone)
+        .set(<String, dynamic>{
+      'id': widget.conversation.ref,
+      'owner': widget.conversation.pnPhone,
+      'color': twysheUser.color,
+      'other_phone': twysheUser.phone,
+      'other_name': twysheUser.nickname,
+      'name': twysheUser.nickname,
+      'count': count,
+      'message': message,
+      'posted': Timestamp.now(),
+      'status': 1,
+      //'posts': 0,
+    }).then((value) {
+      Assist.log(
+          'The conversation \'$widget.conversation.ref\' has been successfully added!');
+    }).onError((error, stackTrace) {
+      Assist.log(
+          'Unable to update the conversation for user ${widget.conversation.pnPhone} and sender ${twysheUser.phone}: $error');
+    });
+  }
+
+  Future<void> uploadImageFileToPebraCloud(XFile file, MessageType type) async {
+    int sizeInBytes = await file.length();
+
+    final uri = Uri.parse(
+        'https://twyshe.app/files/APIClient.php?task=UploadFile&key=zyKROQ8sMMx676HLah3t9zaaPNtfXyrf&id=chat');
+    final multiPartFile = await http.MultipartFile.fromPath('file', file.path,
+        filename: file.name);
+    final uploadRequest = http.MultipartRequest('POST', uri)
+      ..files.add(multiPartFile)
+      ..fields.addAll(<String, String>{
+        'task': 'UploadFile',
+        'key': 'zyKROQ8sMMx676HLah3t9zaaPNtfXyrf',
+      });
+
+    final responseStream = await uploadRequest.send();
+    final response = await http.Response.fromStream(responseStream);
+
+    if (response.statusCode == 200) {
+      final parsed = jsonDecode(response.body);
+
+      if (parsed['Succeeded']) {
+        String url = parsed['Data'];
+        Assist.log(
+            'The upload succeeded and file url is https://twyshe.app/files$url');
+
+        _postMessage(null, type, 'https://twyshe.app/files$url', sizeInBytes,
+            lookupMimeType(file.path), file.name);
+      } else {
+        Assist.log(
+            'The upload failed and returned reason is ${parsed['Message']}');
+      }
+    } else {
+      Assist.log(
+          'The upload failed and returned status code is ${response.statusCode}');
+    }
+  }
+
+  Future<void> uploadFileToPebraCloud(
+      PlatformFile file, MessageType type) async {
+    int sizeInBytes = file.size;
+
+    final uri = Uri.parse(
+        'https://twyshe.app/files/APIClient.php?task=UploadFile&key=zyKROQ8sMMx676HLah3t9zaaPNtfXyrf&id=chat');
+    final multiPartFile = await http.MultipartFile.fromPath(
+        'file', file.path ?? '',
+        filename: file.name);
+    final uploadRequest = http.MultipartRequest('POST', uri)
+      ..files.add(multiPartFile)
+      ..fields.addAll(<String, String>{
+        'task': 'UploadFile',
+        'key': 'zyKROQ8sMMx676HLah3t9zaaPNtfXyrf',
+      });
+
+    final responseStream = await uploadRequest.send();
+    final response = await http.Response.fromStream(responseStream);
+
+    if (response.statusCode == 200) {
+      final parsed = jsonDecode(response.body);
+
+      if (parsed['Succeeded']) {
+        String url = parsed['Data'];
+        Assist.log(
+            'The upload succeeded and file url is https://twyshe.app/files$url');
+
+        _postMessage(null, type, 'https://twyshe.app/files$url', sizeInBytes,
+            lookupMimeType(file.path!), file.name);
+      } else {
+        Assist.log(
+            'The upload failed and returned reason is ${parsed['Message']}');
+      }
+    } else {
+      Assist.log(
+          'The upload failed and returned status code is ${response.statusCode}');
+    }
+  }
+
+  void _handleImageSelection() async {
+    final result = await ImagePicker().pickImage(
+      imageQuality: 70,
+      maxWidth: 1440,
+      source: ImageSource.gallery,
+    );
+
+    if (result != null) {
+      uploadImageFileToPebraCloud(result, MessageType.image);
+    }
+  }
+
   ///Adds the message to the conversation on firestore
-  void _postMessage(String text) async {
+  void _postMessage(String? text, MessageType type, String? url, int? size,
+      String? mimeType, String? name) async {
     Map<String, dynamic> author = {
       'firstName': twysheUser.nickname,
       'id': twysheUser.phone,
@@ -243,32 +324,52 @@ class _ChatPageState extends State<ChatPage> {
       'color': twysheUser.color,
     };
 
+    Map<String, dynamic> message = {
+      'conversation': widget.conversation.ref,
+      'author': author,
+      'createdAt': Timestamp.now(),
+      'id': null,
+      'status': Status.sent.name,
+      'state': Assist.messageStateActive,
+      'type': type.name,
+    };
+
+    if (type == MessageType.text) {
+      message['text'] = text;
+    } else if (type == MessageType.image) {
+      message['uri'] = url;
+      message['size'] = size;
+      message['name'] = name;
+    } else {
+      message['uri'] = url;
+      message['size'] = size;
+      message['mimeType'] = mimeType;
+      message['name'] = name;
+    }
+
     FirebaseFirestore.instance
         .collection(Assist.firestoreAppCode)
         .doc(Assist.firestoreConversationChatsKey)
         .collection(Assist.firestoreConversationChatsKey)
         .doc(widget.conversation.ref)
         .collection(Assist.firestoreConversationChatsKey)
-        .add(<String, dynamic>{
-      'conversation': widget.conversation.ref,
-      'author': author,
-      'createdAt': Timestamp.now(),
-      'id': null,
-      'status': Status.sent.name,
-      'text': text,
-      'type': MessageType.text.name,
-    }).then((resPost) {
+        .add(message)
+        .then((resPost) {
       Assist.log(
           'The message \'$text\' has been successfully posted to the conversation \'${widget.conversation.nickname}\'');
 
       FirebaseFirestore.instance
+          .collection(Assist.firestoreAppCode)
+          .doc(Assist.firestoreConversationChatsKey)
           .collection(Assist.firestoreConversationChatsKey)
-          .where('conversation', isEqualTo: widget.conversation.ref)
+          .doc(widget.conversation.ref)
+          .collection(Assist.firestoreConversationChatsKey)
+          .where('state', isEqualTo: Assist.messageStateActive)
           .count()
           .get()
           .then((resCount) {
-        _updateConversations(true, text, resCount.count);
-        _updateConversations(false, text, resCount.count);
+        _updateOwnConversation(text, resCount.count);
+        _updateOtherConversation(text, resCount.count);
       }).onError((errorCount, st) {
         Assist.log(
             'Error counting posts for the conversation \'${widget.conversation.ref}\': $errorCount');
@@ -285,9 +386,9 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: ListTile(
-          title: Text(widget.conversation.nickname,
+          title: Text(widget.conversation.pnName,
               style: const TextStyle(color: Colors.white)),
-          subtitle: Text('${widget.conversation.pn} - Last seen Today ',
+          subtitle: Text('${widget.conversation.pnPhone} - Last seen Today ',
               style: const TextStyle(color: Colors.white)),
         ),
         actions: [
@@ -307,6 +408,7 @@ class _ChatPageState extends State<ChatPage> {
             .collection(Assist.firestoreConversationChatsKey)
             .doc(widget.conversation.ref)
             .collection(Assist.firestoreConversationChatsKey)
+            .where('state', isEqualTo: Assist.messageStateActive)
             .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -319,43 +421,86 @@ class _ChatPageState extends State<ChatPage> {
               child: CircularProgressIndicator(),
             );
           }
-          return Chat(
-            messages: snapshot.data!.docs
-                .map((DocumentSnapshot document) {
-                  Map<String, dynamic> data =
-                      document.data()! as Map<String, dynamic>;
 
-                  //get ref
-                  String ref = document.id;
+          _messages = snapshot.data!.docs
+              .map((DocumentSnapshot document) {
+                Map<String, dynamic> data =
+                    document.data()! as Map<String, dynamic>;
 
-                  //set user
-                  String userId = data['author']['id'];
-                  String userFirstName = data['author']['firstName'];
-                  String? userLastName = data['author']['lastName'];
+                //get ref
+                String ref = document.id;
 
-                  User messageUser = User(
-                      id: userId,
-                      firstName: userFirstName,
-                      lastName: userLastName);
+                //set user
+                String userId = data['author']['id'];
+                String userFirstName = data['author']['firstName'];
+                String? userLastName = data['author']['lastName'];
 
-                  //text message
-                  Timestamp messageCreatedAt = data['createdAt'];
+                User messageUser = User(
+                    id: userId,
+                    firstName: userFirstName,
+                    lastName: userLastName);
 
-                  String messageStatus = data['status'];
+                //text message
+                Timestamp messageCreatedAt = data['createdAt'];
+
+                String messageStatus = data['status'];
+
+                String messageType = data['type'];
+
+                if (messageType == "text") {
                   String messageText = data['text'];
-                  String messageType = data['type'];
 
                   var textMessage = types.TextMessage(
                       author: messageUser,
                       createdAt: messageCreatedAt.millisecondsSinceEpoch,
                       id: ref,
                       text: messageText,
-                      status: Status.seen,
+                      status:
+                          messageStatus == "seen" ? Status.seen : Status.sent,
                       type: MessageType.text);
                   return textMessage;
-                })
-                .toList()
-                .cast(),
+                } else if (messageType == "image") {
+                  String uri = data['uri'];
+                  int size = data['size'];
+                  String name = data['name'];
+
+                  var textMessage = types.ImageMessage(
+                      author: messageUser,
+                      createdAt: messageCreatedAt.millisecondsSinceEpoch,
+                      id: ref,
+                      uri: uri,
+                      name: name,
+                      size: size,
+                      status:
+                          messageStatus == "seen" ? Status.seen : Status.sent,
+                      type: MessageType.image);
+                  return textMessage;
+                } else {
+                  String uri = data['uri'];
+                  int size = data['size'];
+                  String name = data['name'];
+                  String mimeType = data['mimeType'];
+
+                  var textMessage = types.FileMessage(
+                      author: messageUser,
+                      createdAt: messageCreatedAt.millisecondsSinceEpoch,
+                      id: ref,
+                      uri: uri,
+                      name: name,
+                      mimeType: mimeType,
+                      size: size,
+                      status:
+                          messageStatus == "seen" ? Status.seen : Status.sent,
+                      type: MessageType.file);
+
+                  return textMessage;
+                }
+              })
+              .toList()
+              .cast();
+
+          return Chat(
+            messages: _messages,
             onAttachmentPressed: _handleAttachmentPressed,
             onMessageTap: _handleMessageTap,
             onPreviewDataFetched: _handlePreviewDataFetched,

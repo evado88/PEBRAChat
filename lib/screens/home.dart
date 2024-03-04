@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
@@ -7,14 +8,16 @@ import 'package:twyshe/screens/conversations.dart';
 import 'package:twyshe/screens/discussions.dart';
 import 'package:twyshe/screens/facilities.dart';
 import 'package:twyshe/screens/facility_map.dart';
+import 'package:twyshe/screens/register.dart';
 import 'package:twyshe/screens/resources.dart';
 import 'package:twyshe/screens/settings.dart';
 import 'package:twyshe/utils/assist.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+  const HomePage({super.key, required this.title, required this.user});
 
   final String title;
+  final String user;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -28,18 +31,25 @@ class _HomePageState extends State<HomePage> {
 
   final ResourcesPage _resourcePage = const ResourcesPage(title: 'Resources');
 
-  final ConversationsPage _conversationsPage =
-      const ConversationsPage(title: 'Conversations');
+  late final ConversationsPage _conversationsPage;
 
   String nickname = '';
   String phone = '';
-  String pn = '';
   String color = '';
+
+  String pnPhone = '';
+  String pnColor = Assist.defaultColor;
+  String pnName = Assist.defaultName;
 
   @override
   void initState() {
     super.initState();
     _setUser();
+
+    _conversationsPage = ConversationsPage(
+      title: 'Conversations',
+      user: widget.user,
+    );
   }
 
   void _setUser() async {
@@ -49,21 +59,23 @@ class _HomePageState extends State<HomePage> {
       nickname = profile.nickname;
       phone = profile.phone;
       color = profile.color;
-      pn = profile.pnPhone;
+      pnPhone = profile.pnPhone;
     });
   }
 
   ///Adds a new discussion to firestore
   void _startConversation(
       String conversationId, bool isUser, bool startConversation) async {
-    TwysheConversation conversation = TwysheConversation(
-        conversationId, phone, nickname, pn, Timestamp.now(), 1, 0);
+    TwysheConversation conversation = TwysheConversation(conversationId, phone,
+        nickname, pnPhone, Timestamp.now(), 1, 0, pnColor, pnName);
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ChatPage(conversation: conversation),
-      ),
-    );
+    if (startConversation) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ChatPage(conversation: conversation),
+        ),
+      );
+    }
   }
 
   ListTile _tile(BuildContext context, int index, String title, String subtitle,
@@ -85,7 +97,7 @@ class _HomePageState extends State<HomePage> {
         Assist.log('The item has been tapped at $index');
 
         if (index == 1) {
-          String? conversationId = Assist.getCoversationId(phone, pn);
+          String? conversationId = Assist.getCoversationId(phone, pnPhone);
 
           if (conversationId == null) {
             //same phone number
@@ -95,13 +107,13 @@ class _HomePageState extends State<HomePage> {
             //start conversation
 
             Assist.log(
-                'Starting conversation for user  peer navigator $pn and $phone and $conversationId computed id');
+                'Starting conversation for user  peer navigator $pnPhone and $phone and $conversationId computed id');
 
             _startConversation(conversationId, false, false);
 
             //start conversation
             Assist.log(
-                'Starting conversation for user $phone and peer navigator $pn and $conversationId computed id');
+                'Starting conversation for user $phone and peer navigator $pnPhone and $conversationId computed id');
 
             _startConversation(conversationId, true, true);
           }
@@ -123,6 +135,14 @@ class _HomePageState extends State<HomePage> {
           );
         } else if (index == 8) {
           Assist.removeUser();
+          FirebaseAuth.instance.signOut();
+
+          Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const RegisterPage(title: 'Register'),
+              ),
+              (route) => false);
         }
       },
     );
@@ -143,7 +163,7 @@ class _HomePageState extends State<HomePage> {
   ListView _getHomeContent(BuildContext context) {
     return ListView(
       children: [
-        _tile(context, 1, 'My Peer Navigator - $pn',
+        _tile(context, 1, 'My Peer Navigator - $pnPhone',
             'Chat with your peer navigator', Icons.personal_injury),
         const Divider(),
         _tile(context, 2, nickname, 'Your nickname. Tap to change', Icons.face),
