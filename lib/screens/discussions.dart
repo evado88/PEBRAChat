@@ -88,10 +88,34 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0)),
                         child: ListTile(
-                          title: Text(discussion.title),
-                          subtitle: Text(posts == 0
-                              ? 'No Posts'
-                              : '$posts Posts • $nickname • $date'),
+                          title: Text(discussion.title, maxLines: 4),
+                          subtitle: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(date),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      nickname,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      posts == 0 ? 'No Posts' : '$posts Posts',
+                                      style:
+                                          const TextStyle(color: Colors.purple),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            ],
+                          ),
                           leading: CircleAvatar(
                               radius: 20,
                               backgroundColor: discussion.color == ''

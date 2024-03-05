@@ -10,10 +10,12 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:twyshe/classes/discussion.dart';
+import 'package:twyshe/classes/upload_file.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 import 'package:twyshe/utils/assist.dart';
 import 'package:uuid/uuid.dart';
@@ -29,7 +31,8 @@ class DiscussionPage extends StatefulWidget {
 
 class _DiscussionPageState extends State<DiscussionPage> {
   // Setting reference to 'tasks' collection
-  late final List<types.Message> _messages = [];
+// Setting reference to 'tasks' collection
+  List<types.Message> _messages = [];
 
   late final TwysheUser twysheUser;
   late final User _user;
@@ -96,23 +99,53 @@ class _DiscussionPageState extends State<DiscussionPage> {
     );
   }
 
+  showLoaderDialog(BuildContext context) {
+    AlertDialog alert = AlertDialog(
+      content: Row(
+        children: [
+          const CircularProgressIndicator(),
+          Container(
+              margin: const EdgeInsets.only(left: 7),
+              child: const Text("Loading...")),
+        ],
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
   void _handleFileSelection() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
     );
 
-    if (result != null && result.files.single.path != null) {
-      final message = types.FileMessage(
-        author: _user,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        id: const Uuid().v4(),
-        mimeType: lookupMimeType(result.files.single.path!),
-        name: result.files.single.name,
-        size: result.files.single.size,
-        uri: result.files.single.path!,
-      );
+    if (result != null) {
+      if (mounted) {
+        showLoaderDialog(context);
+      }
 
-      _addMessage(message);
+      TwysheTaskResult res = await TwysheAPI.uploadFileToCloud(result.files[0]);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (res.succeeded) {
+        TwysheUploadFile uploadFile = res.data as TwysheUploadFile;
+
+        //add the message to chat
+        _postDiscussionMessage(null, MessageType.file, uploadFile.uri,
+            uploadFile.size, uploadFile.mimeType, uploadFile.name);
+      } else {
+        if (mounted) {
+          Assist.showSnackBar(context, res.message);
+        }
+      }
     }
   }
 
@@ -124,21 +157,27 @@ class _DiscussionPageState extends State<DiscussionPage> {
     );
 
     if (result != null) {
-      final bytes = await result.readAsBytes();
-      final image = await decodeImageFromList(bytes);
+      if (mounted) {
+        showLoaderDialog(context);
+      }
 
-      final message = types.ImageMessage(
-        author: _user,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        height: image.height.toDouble(),
-        id: const Uuid().v4(),
-        name: result.name,
-        size: bytes.length,
-        uri: result.path,
-        width: image.width.toDouble(),
-      );
+      TwysheTaskResult res = await TwysheAPI.uploadImageFileToCloud(result);
 
-      _addMessage(message);
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (res.succeeded) {
+        TwysheUploadFile uploadFile = res.data as TwysheUploadFile;
+
+        //add the message to chat
+        _postDiscussionMessage(null, MessageType.image, uploadFile.uri,
+            uploadFile.size, uploadFile.mimeType, uploadFile.name);
+      } else {
+        if (mounted) {
+          Assist.showSnackBar(context, res.message);
+        }
+      }
     }
   }
 
@@ -237,33 +276,52 @@ class _DiscussionPageState extends State<DiscussionPage> {
   }
 
   void _handleSendPressed(types.PartialText message) {
-    _postDiscussionMessage(message.text);
+    _postDiscussionMessage(
+        message.text, MessageType.text, null, null, null, null);
   }
 
   ///Adds the message to the discussion on firestore
-  void _postDiscussionMessage(String text) async {
+  void _postDiscussionMessage(String? text, MessageType type, String? url,
+      int? size, String? mimeType, String? name) async {
     Map<String, dynamic> author = {
       'firstName': twysheUser.nickname,
       'id': twysheUser.phone,
       'lastname': null,
       'color': twysheUser.color,
     };
-    FirebaseFirestore.instance
-        .collection(Assist.firestoreAppCode)
-        .doc(Assist.firestoreDiscussionPostsKey)
-        .collection(Assist.firestoreDiscussionPostsKey)
-        .doc(widget.discussion.ref)
-        .collection(Assist.firestoreDiscussionPostsKey)
-        .add(<String, dynamic>{
+
+    Map<String, dynamic> message = {
       'discussion': widget.discussion.ref,
       'author': author,
       'createdAt': Timestamp.now(),
       'id': null,
       'state': 1,
       'status': Status.sent.name,
-      'text': text,
-      'type': MessageType.text.name,
-    }).then((resPost) {
+      'type': type.name,
+      'sender': twysheUser.phone
+    };
+
+    if (type == MessageType.text) {
+      message['text'] = text;
+    } else if (type == MessageType.image) {
+      message['uri'] = url;
+      message['size'] = size;
+      message['name'] = name;
+    } else {
+      message['uri'] = url;
+      message['size'] = size;
+      message['mimeType'] = mimeType;
+      message['name'] = name;
+    }
+
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreDiscussionPostsKey)
+        .collection(Assist.firestoreDiscussionPostsKey)
+        .doc(widget.discussion.ref)
+        .collection(Assist.firestoreDiscussionPostsKey)
+        .add(message)
+        .then((resPost) {
       Assist.log(
           'The message \'$text\' has been successfully posted to the discussion \'${widget.discussion.nickname}\'');
 
@@ -272,8 +330,18 @@ class _DiscussionPageState extends State<DiscussionPage> {
         Assist.subscribeTopic(widget.discussion.ref);
       }
       //send  notification
+      String notice;
+
+      if (type == MessageType.text) {
+        notice = text ?? '(no text)';
+      } else if (type == MessageType.image) {
+        notice = '(image)';
+      } else {
+        notice = '(file)';
+      }
+
       TwysheAPI.sendTopicMessage(widget.discussion.ref,
-          '${twysheUser.nickname} - ${widget.discussion.title}', text);
+          '${twysheUser.nickname} - ${widget.discussion.title}', notice);
 
       ///update count
       FirebaseFirestore.instance
@@ -420,43 +488,20 @@ class _DiscussionPageState extends State<DiscussionPage> {
               child: CircularProgressIndicator(),
             );
           }
+
+          _messages = snapshot.data!.docs
+              .map((DocumentSnapshot document) {
+                return Assist.getSnapShotMessage(
+                    document: document,
+                    chat: false,
+                    conversation: null,
+                    twysheUser: twysheUser);
+              })
+              .toList()
+              .cast();
+
           return Chat(
-            messages: snapshot.data!.docs
-                .map((DocumentSnapshot document) {
-                  Map<String, dynamic> data =
-                      document.data()! as Map<String, dynamic>;
-
-                  //get ref
-                  String ref = document.id;
-
-                  //set user
-                  String userId = data['author']['id'];
-                  String userFirstName = data['author']['firstName'];
-                  String? userLastName = data['author']['lastName'];
-
-                  User messageUser = User(
-                      id: userId,
-                      firstName: userFirstName,
-                      lastName: userLastName);
-
-                  //text message
-                  Timestamp messageCreatedAt = data['createdAt'];
-
-                  String messageStatus = data['status'];
-                  String messageText = data['text'];
-                  String messageType = data['type'];
-
-                  var textMessage = types.TextMessage(
-                      author: messageUser,
-                      createdAt: messageCreatedAt.millisecondsSinceEpoch,
-                      id: ref,
-                      text: messageText,
-                      status: Status.seen,
-                      type: MessageType.text);
-                  return textMessage;
-                })
-                .toList()
-                .cast(),
+            messages: _messages,
             onAttachmentPressed: _handleAttachmentPressed,
             onMessageTap: _handleMessageTap,
             onPreviewDataFetched: _handlePreviewDataFetched,

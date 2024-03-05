@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -98,7 +97,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   String color = data['color'];
                   int count = data['count'] as int;
                   String ref = data['id'];
-                  String message = data['message'];
+                  String? message = data['message'];
                   String name = data['name'];
                   String otherName = data['other_name'];
                   String otherPhone = data['other_phone'];
@@ -112,7 +111,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       otherName, otherPhone, owner, timestamp, status);
 
                   String date =
-                      DateFormat('d MMM yyy H:m').format(timestamp.toDate());
+                      DateFormat('d MMM yy H:m').format(timestamp.toDate());
 
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
@@ -121,10 +120,60 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0)),
                       child: ListTile(
-                        title: Text(chat.otherName),
-                        subtitle: Text(chat.message.isEmpty
-                            ? '${chat.name}: (no message)• $date • $count Messages'
-                            : '${chat.name}: ${chat.message} • $date • $count Messages'),
+                        title: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                chat.otherName,
+                                style: TextStyle(
+                                    fontWeight: count != 0
+                                        ? FontWeight.bold
+                                        : FontWeight.normal),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                date,
+                                style: TextStyle(
+                                    fontWeight: count != 0
+                                        ? FontWeight.bold
+                                        : FontWeight.normal),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        subtitle: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                                flex: 2,
+                                child: Text(
+                                  chat.message == null
+                                      ? '${chat.name}: (file)'
+                                      : '${chat.name}: ${chat.message}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                )),
+                            Expanded(
+                              child: count == 0
+                                  ? const SizedBox()
+                                  : CircleAvatar(
+                                      radius: 10,
+                                      backgroundColor: Colors.green,
+                                      child: Text(
+                                        '$count',
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
                         leading: CircleAvatar(
                             radius: 20,
                             backgroundColor: Colors.purple,

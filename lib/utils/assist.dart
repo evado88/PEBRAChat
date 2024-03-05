@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'dart:async';
-
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart';
+import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -32,6 +35,15 @@ class Assist {
 
   //The online  URL for the api
   static const onlineApiUrl = 'http://nkoleevans.pythonanywhere.com';
+
+  ///The active file web URL of the app
+  static const fileServerUrl = 'https://twyshe.app/files';
+
+  ///The active api key for the web URL of the app
+  static const fileServerKey = 'zyKROQ8sMMx676HLah3t9zaaPNtfXyrf';
+
+  ///The active upload task for the web URL of the app
+  static const fileServerUploadTask = 'UploadFile';
 
   ///The phone number for a user who is not registered
   static const unregisteredPhone = 'unregistered';
@@ -227,6 +239,218 @@ class Assist {
         'The profile has been updated. Initial values; $initials, Currents: $currents');
 
     return true;
+  }
+
+  static void updateChatMessageStatus(
+      {required String messageRef,
+      required String? text,
+      required Status status,
+      required TwysheConversation? conversation,
+      required TwysheUser twysheUser}) {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationChatsKey)
+        .collection(Assist.firestoreConversationChatsKey)
+        .doc(conversation!.ref)
+        .collection(Assist.firestoreConversationChatsKey)
+        .doc(messageRef)
+        .update({
+      'status': status.name,
+    }).then((resPost) {
+      Assist.log(
+          'The message \'$messageRef\' has been successfully updated to \'${status.name}\'');
+
+      Assist.updateOwnConversation(
+          message: text, conversation: conversation, twysheUser: twysheUser);
+
+      Assist.updateOtherConversation(
+          message: text, conversation: conversation, twysheUser: twysheUser);
+    }).onError((resError, stackTrace) {
+      Assist.log(
+          'Unable to update message \'$messageRef\' to status \'${status.name}\': $resError');
+    });
+  }
+
+  static Message getSnapShotMessage(
+      {required DocumentSnapshot document,
+      required bool chat,
+      required TwysheUser twysheUser,
+      required TwysheConversation? conversation}) {
+    Map<String, dynamic> data = document.data()! as Map<String, dynamic>;
+    //get ref
+    String ref = document.id;
+
+    //set user
+    String userId = data['author']['id'];
+    String userFirstName = data['author']['firstName'];
+    String? userLastName = data['author']['lastName'];
+
+    User messageUser =
+        User(id: userId, firstName: userFirstName, lastName: userLastName);
+
+    //text message
+    Timestamp messageCreatedAt = data['createdAt'];
+
+    String messageStatus = data['status'];
+
+    String messageType = data['type'];
+
+    String sender = data['sender'];
+
+    String? messageText = data['text'];
+
+    //check if message belongs to one to one chat needs to be marked as seen
+    if (chat &&
+        messageStatus == Status.sent.name &&
+        sender.compareTo(twysheUser.phone) != 0) {
+      Assist.updateChatMessageStatus(
+          messageRef: ref,
+          text: messageText,
+          status: Status.seen,
+          conversation: conversation,
+          twysheUser: twysheUser);
+    }
+
+    if (messageType == "text") {
+      var textMessage = types.TextMessage(
+          author: messageUser,
+          createdAt: messageCreatedAt.millisecondsSinceEpoch,
+          id: ref,
+          text: messageText!,
+          status: messageStatus == "seen" ? Status.seen : Status.sent,
+          type: MessageType.text);
+
+      return textMessage;
+    } else if (messageType == "image") {
+      String uri = data['uri'];
+      int size = data['size'];
+      String name = data['name'];
+
+      var textMessage = types.ImageMessage(
+          author: messageUser,
+          createdAt: messageCreatedAt.millisecondsSinceEpoch,
+          id: ref,
+          uri: uri,
+          name: name,
+          size: size,
+          status: messageStatus == "seen" ? Status.seen : Status.sent,
+          type: MessageType.image);
+      return textMessage;
+    } else {
+      String uri = data['uri'];
+      int size = data['size'];
+      String name = data['name'];
+      String mimeType = data['mimeType'];
+
+      var textMessage = types.FileMessage(
+          author: messageUser,
+          createdAt: messageCreatedAt.millisecondsSinceEpoch,
+          id: ref,
+          uri: uri,
+          name: name,
+          mimeType: mimeType,
+          size: size,
+          status: messageStatus == "seen" ? Status.seen : Status.sent,
+          type: MessageType.file);
+
+      return textMessage;
+    }
+  }
+
+  ///update own conversation
+  static void updateOwnConversation(
+      {required String? message,
+      required TwysheConversation conversation,
+      required TwysheUser twysheUser}) async {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationChatsKey)
+        .collection(Assist.firestoreConversationChatsKey)
+        .doc(conversation.ref)
+        .collection(Assist.firestoreConversationChatsKey)
+        .where('status', isEqualTo: Status.sent.name)
+        .where('sender', isEqualTo: conversation.pnPhone)
+        .count()
+        .get()
+        .then((resCount) {
+      FirebaseFirestore.instance
+          .collection(Assist.firestoreAppCode)
+          .doc(Assist.firestoreConversationsKey)
+          .collection(Assist.firestoreConversationsKey)
+          .doc(twysheUser.phone)
+          .collection(Assist.firestoreConversationsKey)
+          .doc(conversation.pnPhone)
+          .set(<String, dynamic>{
+        'id': conversation.ref,
+        'owner': twysheUser.phone,
+        'color': twysheUser.color,
+        'other_phone': conversation.pnPhone,
+        'other_name': conversation.pnName,
+        'name': 'You',
+        'count': resCount.count,
+        'message': message,
+        'posted': Timestamp.now(),
+        'status': 1,
+        //'posts': 0,
+      }).then((value) {
+        Assist.log(
+            'The conversation \'${conversation.ref}\' has been successfully updated!');
+      }).onError((error, stackTrace) {
+        Assist.log(
+            'Unable to update the conversation for user ${twysheUser.phone} and recipient ${conversation.pnPhone}: $error');
+      });
+    }).onError((errorCount, st) {
+      Assist.log(
+          'Error counting posts for the conversation \'${conversation.ref}\': $errorCount');
+    });
+  }
+
+  //update other conversation
+  static void updateOtherConversation(
+      {required String? message,
+      required TwysheConversation conversation,
+      required TwysheUser twysheUser}) async {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationChatsKey)
+        .collection(Assist.firestoreConversationChatsKey)
+        .doc(conversation.ref)
+        .collection(Assist.firestoreConversationChatsKey)
+        .where('status', isEqualTo: Status.sent.name)
+        .where('sender', isEqualTo: twysheUser.phone)
+        .count()
+        .get()
+        .then((resCount) {
+      FirebaseFirestore.instance
+          .collection(Assist.firestoreAppCode)
+          .doc(Assist.firestoreConversationsKey)
+          .collection(Assist.firestoreConversationsKey)
+          .doc(conversation.pnPhone)
+          .collection(Assist.firestoreConversationsKey)
+          .doc(twysheUser.phone)
+          .set(<String, dynamic>{
+        'id': conversation.ref,
+        'owner': conversation.pnPhone,
+        'color': twysheUser.color,
+        'other_phone': twysheUser.phone,
+        'other_name': twysheUser.nickname,
+        'name': twysheUser.nickname,
+        'count': resCount.count,
+        'message': message,
+        'posted': Timestamp.now(),
+        'status': 1,
+        //'posts': 0,
+      }).then((value) {
+        Assist.log(
+            'The conversation \'${conversation.ref}\' has been successfully updated!');
+      }).onError((error, stackTrace) {
+        Assist.log(
+            'Unable to update the conversation for user ${conversation.pnPhone} and sender ${twysheUser.phone}: $error');
+      });
+    }).onError((errorCount, st) {
+      Assist.log(
+          'Error counting posts for the conversation \'${conversation.ref}\': $errorCount');
+    });
   }
 
   ///Removes the currently registered user setting from the device

@@ -6,7 +6,7 @@ class TwysheChat{
 final String color; 
 final int count;
 final String id; 
-final String message; 
+final String? message; 
 final String name; 
 final String otherName;
 final String otherPhone;
