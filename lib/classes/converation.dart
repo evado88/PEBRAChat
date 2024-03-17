@@ -9,11 +9,12 @@ final String nickname;
 final Timestamp posted;
 final int status;
 final int posts;
-final String pnPhone;
-final String pnColor;
-final String pnName;
+final String otherPhone;
+final String otherColor;
+final String otherName;
+
 
 ///Creates a new conversation
-TwysheConversation(this.ref, this.user, this.nickname, this.pnPhone, this.posted, this.status, this.posts, this.pnColor, this.pnName);
+TwysheConversation(this.ref, this.user, this.nickname, this.otherPhone, this.posted, this.status, this.posts, this.otherColor, this.otherName);
 
 }

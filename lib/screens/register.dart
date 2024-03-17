@@ -30,8 +30,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _phoneController =
       TextEditingController(text: '');
 
-  final TextEditingController _codeController =
-      TextEditingController(text: '');
+  final TextEditingController _codeController = TextEditingController(text: '');
 
   String _verificationId = '';
 
@@ -87,7 +86,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   ///Starts the phone number sign in process
   void signIn() async {
-
     setState(() {
       _isLoading = true;
     });
@@ -208,7 +206,8 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                         onPressed: () {
                           // Validate returns true if the form is valid, or false otherwise.
-                          if (_formKey.currentState!.validate() && !_isLoading) {
+                          if (_formKey.currentState!.validate() &&
+                              !_isLoading) {
                             // If the form is valid, display a snackbar. In the real world,
                             // you'd often call a server or save the information in a database.
 
@@ -251,24 +250,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     const Text(Assist.appName,
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     Text(
-                        _registrationComplete
-                            ? 'Please set your nickname and PIN to proceed'
-                            : 'Please enter the code that has been sent to the phone number ${_getFullNumber()}',
-                        style: const TextStyle(fontSize: 12)),
-                    _registrationComplete
-                        ? const SizedBox()
-                        : TextButton(
-                            style: TextButton.styleFrom(
-                              textStyle: const TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                            child: const Text('Change Phone Number'),
-                            onPressed: () {
-                              setState(() {
-                                stage = 1;
-                              });
-                            },
-                          ),
+                      _registrationComplete
+                          ? 'Please set your nickname and PIN to proceed'
+                          : 'Please enter the code that has been sent to the phone number ${_getFullNumber()}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                     _registrationComplete
                         ? const SizedBox()
                         : TextFormField(

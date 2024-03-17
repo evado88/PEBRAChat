@@ -41,6 +41,7 @@ class _AddDiscussionPageState extends State<AddDiscussionPage> {
       'nickname': user.nickname,
       'color': user.color,
       'approver': null,
+      'typing':''
     }).then((value) {
       setState(() {
         _saving = false;

@@ -40,6 +40,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
     setState(() {
       _profile = currentUser;
     });
+
+    Assist.updateUserStatus(twysheUser: currentUser, typing: false);
   }
 
   ///Adds a new discussion to firestore
@@ -67,6 +69,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        appBar: AppBar(
+        title: Text(widget.title),
+      ),
       backgroundColor: Colors.purple,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -79,15 +84,37 @@ class _ConversationsPageState extends State<ConversationsPage> {
             .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.hasError) {
-            return const Center(child: Text('Something went wrong'));
+            return const Center(
+              child: Text(
+                'Something went wrong',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20),
+              ),
+            );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
             );
           }
 
+          if (snapshot.connectionState == ConnectionState.active &&
+              snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                'No conversations for now',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20),
+              ),
+            );
+          }
           return ListView(
             children: snapshot.data!.docs
                 .map((DocumentSnapshot document) {
@@ -104,11 +131,15 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   String owner = data['owner'];
                   Timestamp timestamp = data['posted'] as Timestamp;
                   int status = data['status'] as int;
+                  String typing = '';
 
+                  if (data.containsKey('typing')) {
+                    typing = data['typing'];
+                  }
                   //TwysheChat(this.color, this.count,  this.id, this.message, this.name, this.otherName, this.otherPhone, this.owner, this.posted, this.status);
 
                   TwysheChat chat = TwysheChat(color, count, ref, message, name,
-                      otherName, otherPhone, owner, timestamp, status);
+                      otherName, otherPhone, owner, timestamp, status, typing);
 
                   String date =
                       DateFormat('d MMM yy H:m').format(timestamp.toDate());
@@ -155,7 +186,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
                                 child: Text(
                                   chat.message == null
                                       ? '${chat.name}: (file)'
-                                      : '${chat.name}: ${chat.message}',
+                                      : typing == ''
+                                          ? '${chat.name}: ${chat.message}'
+                                          : '$typing is typing...',
+                                  style: typing == ''
+                                      ? null
+                                      : const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 )),

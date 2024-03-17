@@ -9,6 +9,7 @@ import 'package:twyshe/classes/country.dart';
 import 'package:twyshe/classes/facility.dart';
 import 'package:twyshe/classes/resource.dart';
 import 'package:twyshe/classes/upload_file.dart';
+import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:http/http.dart' as http;
 import 'package:twyshe/utils/assist.dart';
@@ -216,8 +217,40 @@ class TwysheAPI {
     }
   }
 
-  static Future<TwysheTaskResult> uploadImageFileToCloud(
-      XFile file) async {
+  ///Sends a device message using the server
+  static Future<TwysheTaskResult> sendDeviceMessage(
+      String phone, String notificationTitle, String notificationBody) async {
+    http.Client client = http.Client();
+
+    Assist.log(
+        'Sending a device message to $phone: ${Assist.apiUrl}/send-fcm-device-message');
+
+    Map<String, dynamic> fields = {
+      'phone': phone,
+      'title': notificationTitle,
+      'body': notificationBody
+    };
+
+    try {
+      final response = await client.post(
+          Uri.parse('${Assist.apiUrl}/send-fcm-device-message'),
+          body: fields);
+
+      // Use the compute function to run parseTwysheColors in a separate isolate.
+      Assist.log(
+          'The device notification has been sent successfully to $phone: ${response.body}');
+
+      return TwysheTaskResult(
+          succeeded: true, message: response.body, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when sending a device notification to $phone: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+  static Future<TwysheTaskResult> uploadImageFileToCloud(XFile file) async {
     Assist.log(
         'Starting the image upload for file ${file.name} to server ${Assist.fileServerUrl}...');
 
@@ -301,8 +334,7 @@ class TwysheAPI {
     }
   }
 
-  static Future<TwysheTaskResult> uploadFileToCloud(
-      PlatformFile file) async {
+  static Future<TwysheTaskResult> uploadFileToCloud(PlatformFile file) async {
     Assist.log(
         'Starting the file upload for file ${file.name} to server ${Assist.fileServerUrl}...');
 
@@ -384,6 +416,306 @@ class TwysheAPI {
           succeeded: false,
           message: 'Unable to post file due. An error occured',
           items: []);
+    }
+  }
+
+  ///Registers the current phone
+  static Future<TwysheTaskResult> registerPhone(
+      String nickname, phone, pin, color) async {
+    http.Client client = http.Client();
+
+    Assist.log(
+        'Starting to register phone on the server: ${Assist.apiUrl}/phone/register');
+
+    String token = await Assist.getFCMToken();
+
+    Map<String, String> values = {
+      'unumber': phone,
+      'uname': nickname,
+      'upin': pin,
+      'utoken': token,
+      'ucolor': color
+    };
+
+    try {
+      final response = await client
+          .post(Uri.parse('${Assist.apiUrl}/phone/register'), body: values);
+
+      // check the response
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+
+        if (parsed['succeeded']) {
+          TwysheUser current = TwysheUser.fromJson(parsed['items'][0]);
+
+          Assist.log(
+              'Phone registration successfully with phone ${current.phone} and name ${current.nickname} and status ${current.status}');
+
+          return TwysheTaskResult(
+            succeeded: true,
+            message: '',
+            items: [],
+            data: current,
+          );
+        } else {
+          Assist.log(
+              'Unable to complete phone registration and reason from server is ${parsed['message']}');
+
+          return TwysheTaskResult(
+              succeeded: false,
+              message:
+                  'Unable to complete phone registration: ${parsed['message']}',
+              items: []);
+        }
+      } else {
+        Assist.log(
+            'Unable to complete phone registration and status code is ${response.statusCode}');
+
+        return TwysheTaskResult(
+            succeeded: false,
+            message:
+                'Unable to complete phone registration due to server error',
+            items: []);
+      }
+    } on SocketException catch (e) {
+      Assist.log(
+          'Unable to complete phone registration due to a socket error: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to complete phone registration. Please make sure you have internet',
+          items: []);
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when loading peer from the server: ${e.message}');
+      return TwysheTaskResult(
+          succeeded: false,
+          message: 'Unable to complete phone registration. Please try again',
+          items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading peer from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: 'Unable to complete phone registration due to error. Please try again', items: []);
+    }
+  }
+
+  ///Fetches the resource from online
+  static Future<TwysheTaskResult> performHandshake(String phone) async {
+    http.Client client = http.Client();
+
+    String token = await Assist.getFCMToken();
+
+    Assist.log(
+        'Starting handshake for the user $phone and token $token: ${Assist.apiUrl}/phone/handshake');
+
+    Map<String, String> values = {
+      'unumber': phone,
+      'utoken': token,
+    };
+
+    try {
+      final response = await client
+          .post(Uri.parse('${Assist.apiUrl}/phone/handshake'), body: values);
+
+      // check the response
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+
+        if (parsed['succeeded']) {
+          TwysheUser current = TwysheUser.fromJson(parsed['items'][0]);
+
+          Assist.log(
+              'The handshake has been successfully completed for user ${current.phone}, name ${current.nickname}, status ${current.status}');
+
+          return TwysheTaskResult(
+              succeeded: true, message: '', items: [], data: current);
+        } else {
+          Assist.log(
+              'The handshake failed and reason from server is ${parsed['message']}');
+
+          return TwysheTaskResult(
+              succeeded: false,
+              message: 'Unable to complete handshake: ${parsed['message']}',
+              items: []);
+        }
+      } else {
+        Assist.log(
+            'The handshake failed and status code is ${response.statusCode}');
+
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'Unable to perform handshake due to server error',
+            items: []);
+      }
+    } on SocketException catch (e) {
+      Assist.log(
+          'Unable to perform handshake due to a socket error: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to perform handshake. Please make sure you have internet',
+          items: []);
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when performing handshake: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when performing handshak: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+  ///Fetches the reource from online
+  static Future<TwysheTaskResult> fetchParticipantPeer(
+      String participant) async {
+    http.Client client = http.Client();
+
+    Assist.log(
+        'Loading the peer from the server: ${Assist.apiUrl}/participant/list/peer/$participant');
+    try {
+      final response = await client.get(
+          Uri.parse('${Assist.apiUrl}/participant/list/peer/$participant'));
+
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+
+        if (parsed['succeeded']) {
+          List values = parsed['items'];
+
+          if (values.isNotEmpty) {
+            TwysheUser peer = TwysheUser.fromJson(parsed['items'][0]);
+
+            Assist.log(
+                'The peer has been successfully retrieved with phone ${peer.phone} and name ${peer.nickname}');
+
+            return TwysheTaskResult(
+              succeeded: true,
+              message: '',
+              items: [],
+              data: peer,
+            );
+          } else {
+            Assist.log(
+                'The current participant does not have a peer navigator assigned');
+
+            return TwysheTaskResult(
+                succeeded: false,
+                message:
+                    'Unable to retrieve peer: Peer navigator not yet assigned',
+                items: []);
+          }
+        } else {
+          Assist.log(
+              'The peer could not be retrived and reason from server is ${parsed['message']}');
+
+          return TwysheTaskResult(
+              succeeded: false,
+              message: 'Unable to retrieve peer: ${parsed['message']}',
+              items: []);
+        }
+      } else {
+        Assist.log(
+            'The peer could not be retrived and status code is ${response.statusCode}');
+
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'Unable to retrieve peer due to server error',
+            items: []);
+      }
+    } on SocketException catch (e) {
+      Assist.log('Unable to retrieve peer due to a socket error: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to retrieve peer. Please make sure you have internet',
+          items: []);
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when loading peer from the server: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading peer from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+  ///Fetches the resource from online
+  static Future<TwysheTaskResult> fetchPeerParticipants(String peer) async {
+    http.Client client = http.Client();
+
+    Assist.log(
+        'Loading the participants for the peer from the server: ${Assist.apiUrl}/participant/list/peer/$peer');
+    try {
+      final response = await client
+          .get(Uri.parse('${Assist.apiUrl}/peer/list/participant/$peer'));
+
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+
+        if (parsed['succeeded']) {
+          List<TwysheUser> participants = parsed['items']
+              .map<TwysheUser>((res) => TwysheUser.fromJson(res))
+              .toList();
+
+          Assist.log(
+              'The peer participants have been successfully retrieved and are ${participants.length} item(s) total');
+
+          return TwysheTaskResult(
+            succeeded: true,
+            message: '',
+            items: participants,
+          );
+        } else {
+          Assist.log(
+              'The peer participants could not be retrieved and reason from server is ${parsed['message']}');
+
+          return TwysheTaskResult(
+              succeeded: false,
+              message:
+                  'Unable to retrieve peer participants: ${parsed['message']}',
+              items: []);
+        }
+      } else {
+        Assist.log(
+            'The peer participants could not be retrived and status code is ${response.statusCode}');
+
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'Unable to retrieve participants peer due to server error',
+            items: []);
+      }
+    } on SocketException catch (e) {
+      Assist.log(
+          'Unable to retrieve peer participants due to a socket error: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to retrieve peer participants. Please make sure you have internet',
+          items: []);
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when loading peer participants from the server: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading peer participants from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
     }
   }
 }

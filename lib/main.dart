@@ -94,6 +94,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/register': (context) => const RegisterPage(title: 'Register'),
       },
+      debugShowCheckedModeBanner: false,
     );
   }
 }

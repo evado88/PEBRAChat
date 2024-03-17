@@ -2,14 +2,17 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/discussion.dart';
 import 'package:twyshe/classes/user.dart';
-import 'package:twyshe/screens/add_discussion.dart';
+import 'package:twyshe/screens/chat.dart';
 import 'package:twyshe/screens/discussion.dart';
 import 'package:twyshe/utils/assist.dart';
 
-class DiscussionsPage extends StatefulWidget {
-  const DiscussionsPage({super.key, required this.title});
+class PeersPage extends StatefulWidget {
+  final TwysheUser twysheUser;
+
+  const PeersPage({super.key, required this.twysheUser});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -20,20 +23,18 @@ class DiscussionsPage extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
 
-  final String title;
-
   @override
-  State<DiscussionsPage> createState() => _DiscussionsPageState();
+  State<PeersPage> createState() => _PeersPageState();
 }
 
-class _DiscussionsPageState extends State<DiscussionsPage> {
+class _PeersPageState extends State<PeersPage> {
   // Setting reference to 'tasks' collection
   final Stream<QuerySnapshot> _usersStream = FirebaseFirestore.instance
       .collection(Assist.firestoreAppCode)
-      .doc(Assist.firestoreDiscussionsKey)
-      .collection(Assist.firestoreDiscussionsKey)
-      .where('status', isEqualTo: Assist.messageStateActive)
-      .orderBy('posted', descending: true)
+      .doc(Assist.firestoreUsersKey)
+      .collection(Assist.firestoreUsersKey)
+      .where('type', isEqualTo: Assist.userPeer)
+      .orderBy('name', descending: false)
       .snapshots();
 
   @override
@@ -44,16 +45,46 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
   }
 
   void _setUser() async {
-    TwysheUser currentUser = await Assist.getUserProfile();
+    Assist.updateUserStatus(twysheUser: widget.twysheUser, typing: false);
+  }
 
-    Assist.updateUserStatus(twysheUser: currentUser, typing: false);
+  ///Adds a new discussion to firestore
+  void _startConversation(String pnPhone, pnColor, pnName) async {
+    String? conversationId =
+        Assist.getCoversationId(widget.twysheUser.phone, pnPhone);
+
+    if (conversationId == null) {
+      //same phone number
+      Assist.showSnackBar(context, 'Sorry! But you cannot chat with yourself!');
+    } else {
+      //start conversation
+      Assist.log(
+          'Starting conversation for user ${widget.twysheUser.phone} and peer navigator $pnPhone and $conversationId computed id');
+
+      TwysheConversation conversation = TwysheConversation(
+          conversationId,
+          widget.twysheUser.phone,
+          widget.twysheUser.nickname,
+          pnPhone,
+          Timestamp.now(),
+          1,
+          0,
+          pnColor,
+          pnName);
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ChatPage(conversation: conversation),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const Text('Peer Navigators'),
       ),
       backgroundColor: Colors.purple,
       body: StreamBuilder<QuerySnapshot>(
@@ -68,7 +99,18 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
               child: CircularProgressIndicator(),
             );
           }
-
+          if (snapshot.connectionState == ConnectionState.active &&
+              snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                'No peers for now',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20),
+              ),
+            );
+          }
           return ListView(
             children: snapshot.data!.docs
                 .map((DocumentSnapshot document) {
@@ -77,34 +119,20 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
 
                   String ref = document.id;
 
-                  String title = data['title'];
-                  String description = data['description'];
+                  String nickname = data['name'];
+                  Timestamp timestamp = data['timestamp'] as Timestamp;
 
-                  String phone = data['user'];
-                  String nickname = data['nickname'];
-                  String color = data['color'];
+                  bool isTyping = data['typing'] as bool;
 
-                  int posts = data['posts'] as int;
-                  Timestamp timestamp = data['posted'] as Timestamp;
-                  String typing = '';
+                  if (data.containsKey('color')) {}
+                  if (data.containsKey('color')) {}
 
-                  if (data.containsKey('typing')) {
-                    typing = data['typing'];
-                  }
-
-                  TwysheDiscussion discussion = TwysheDiscussion(
-                      ref,
-                      title,
-                      description,
-                      phone,
-                      nickname,
-                      color,
-                      posts,
-                      timestamp,
-                      typing);
-
-                  String date =
-                      DateFormat('d MMM yyy H:m').format(timestamp.toDate());
+                  TwysheUser user = TwysheUser(
+                      phone: ref,
+                      nickname: nickname,
+                      color: Assist.defaultColor,
+                      pin: '1234',
+                      status: 1);
 
                   return Padding(
                       padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
@@ -113,17 +141,12 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0)),
                         child: ListTile(
-                          title: Text(discussion.title, maxLines: 4),
+                          title: Text(user.nickname, maxLines: 4),
                           subtitle: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(typing == '' ? date : '$typing is typing...',
-                                  style: typing == ''
-                                      ? null
-                                      : const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green)),
+                              Text(ref),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
@@ -137,7 +160,10 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                                   Expanded(
                                     flex: 2,
                                     child: Text(
-                                      posts == 0 ? 'No Posts' : '$posts Posts',
+                                      isTyping
+                                          ? 'Typing...'
+                                          : Assist.getLastSeen(
+                                              timestamp, false),
                                       style:
                                           const TextStyle(color: Colors.purple),
                                     ),
@@ -148,20 +174,15 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                           ),
                           leading: CircleAvatar(
                               radius: 20,
-                              backgroundColor: discussion.color == ''
+                              backgroundColor: user.color == ''
                                   ? Colors.purple
-                                  : Assist.getHexColor(discussion.color),
+                                  : Assist.getHexColor(user.color),
                               child: Text(
                                 nickname.toUpperCase().substring(0, 2),
                                 style: const TextStyle(color: Colors.white),
                               )),
                           onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    DiscussionPage(discussion: discussion),
-                              ),
-                            );
+                            _startConversation(ref, user.color, nickname);
                           },
                         ),
                       ));
@@ -170,18 +191,6 @@ class _DiscussionsPageState extends State<DiscussionsPage> {
                 .cast(),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: (() {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  const AddDiscussionPage(title: 'Add Discussion'),
-            ),
-          );
-        }),
-        tooltip: 'Add Discussion',
-        child: const Icon(Icons.add),
       ),
     );
   }

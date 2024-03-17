@@ -14,8 +14,9 @@ final String color;
 
 final int posts;
 final Timestamp timestamp;
+final String typing;
 
 ///Creates a new discussion with the specified phone, nickname, color and pin
-TwysheDiscussion(this.ref, this.title, this.description, this.phone, this.nickname, this.color, this.posts, this.timestamp);
+TwysheDiscussion(this.ref, this.title, this.description, this.phone, this.nickname, this.color, this.posts, this.timestamp, this.typing);
 
 }

@@ -114,9 +114,6 @@ class _FacilitiesPageState extends State<FacilitiesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
       body: _getView(),
       backgroundColor: Colors.purple,
     );

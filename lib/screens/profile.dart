@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/colors.dart';
 import 'package:twyshe/screens/home.dart';
+import 'package:twyshe/screens/task_result.dart';
+import 'package:twyshe/utils/api.dart';
 import 'package:twyshe/utils/assist.dart';
 
 ///Handles profile chanegs by the user
@@ -22,10 +24,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _color = Assist.defaultColor;
 
+  int _status = Assist.userParticipant;
+
+
   final TextEditingController _nicknameController = TextEditingController();
 
   final TextEditingController _pinController = TextEditingController();
-
+  bool _isLoading = false;
   @override
   void initState() {
     super.initState();
@@ -38,29 +43,49 @@ class _ProfilePageState extends State<ProfilePage> {
     _nicknameController.text = profile.nickname;
     _pinController.text = profile.pin;
     _color = profile.color;
+    _status = profile.status;
   }
 
   ///Saves the user on the device
   void _saveProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
     //Do not include the + in the number when saving
-    Assist.registerUser(widget.phoneNumber.substring(1));
+    String activePhone = widget.phoneNumber.substring(1);
 
-    //Save the profile settings
-    await Assist.saveProfile(
-        _pinController.text, _nicknameController.text, _color);
+    Assist.registerUser(activePhone);
 
-    if (!mounted) {
-      return;
+    //register the phone on server
+    TwysheTaskResult rs = await TwysheAPI.registerPhone(
+        _nicknameController.text, activePhone, _pinController.text, _color);
+
+    if (!rs.succeeded) {
+      if (mounted) {
+        Assist.showSnackBar(context, rs.message);
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } else {
+      //Save the profile settings
+      await Assist.saveProfile(
+          _pinController.text, _nicknameController.text, _color, _status);
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+              builder: (_) => HomePage(
+                    title: Assist.appName,
+                    user: activePhone,
+                  )),
+          (route) => false);
     }
-
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-            builder: (_) => HomePage(
-                  title: Assist.appName,
-                  user: widget.phoneNumber.substring(1),
-                )),
-        (route) => false);
   }
 
   Future<void> _showChooseColor() async {
@@ -177,16 +202,28 @@ class _ProfilePageState extends State<ProfilePage> {
                               40), // fromHeight use double.infinity as width and 40 is the height
                         ),
                         onPressed: () {
-                          // Validate returns true if the form is valid, or false otherwise.
-                          if (_formKey.currentState!.validate()) {
-                            // If the form is valid, display a snackbar. In the real world,
-                            // you'd often call a server or save the information in a database.
+                          if (_color.isEmpty) {
+                            Assist.showSnackBar(
+                                context, "Please choose your color");
+                          } else {
+                            // Validate returns true if the form is valid, or false otherwise.
+                            if (_formKey.currentState!.validate()) {
+                              // If the form is valid, display a snackbar. In the real world,
+                              // you'd often call a server or save the information in a database.
 
-                            //addMessageToGuestBook(_makeController.text, _yearController.text);
-                            _saveProfile();
+                              //addMessageToGuestBook(_makeController.text, _yearController.text);
+                              _saveProfile();
+                            }
                           }
                         },
-                        child: const Text('SAVE PROFILE'),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 30,
+                                width: 30,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 3, color: Colors.white),
+                              )
+                            : const Text('SAVE PROFILE'),
                       ),
                     ),
                   ],

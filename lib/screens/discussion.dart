@@ -1,8 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_types/flutter_chat_types.dart';
@@ -12,13 +12,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:twyshe/classes/discussion.dart';
 import 'package:twyshe/classes/upload_file.dart';
 import 'package:twyshe/classes/user.dart';
-import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 import 'package:twyshe/utils/assist.dart';
-import 'package:uuid/uuid.dart';
 
 class DiscussionPage extends StatefulWidget {
   ///The reference for this discussion
@@ -36,6 +34,14 @@ class _DiscussionPageState extends State<DiscussionPage> {
 
   late final TwysheUser twysheUser;
   late final User _user;
+  bool _initialized = false;
+
+  bool _startedTyping = false;
+
+  late final StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      subscription;
+
+  String _typingUser = "";
 
   @override
   void initState() {
@@ -48,11 +54,34 @@ class _DiscussionPageState extends State<DiscussionPage> {
     twysheUser = await Assist.getUserProfile();
 
     _user = types.User(id: twysheUser.phone, firstName: twysheUser.nickname);
-  }
 
-  void _addMessage(types.Message message) {
-    setState(() {
-      _messages.insert(0, message);
+    Assist.updateUserStatus(twysheUser: twysheUser, typing: false);
+
+    subscription = FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreDiscussionsKey)
+        .collection(Assist.firestoreDiscussionsKey)
+        .doc(widget.discussion.ref)
+        .snapshots()
+        .listen((DocumentSnapshot documentSnapshot) {
+      Map<String, dynamic> data =
+          documentSnapshot.data()! as Map<String, dynamic>;
+
+      if (data.containsKey('typing')) {
+        String typing = data['typing'];
+
+        if (mounted) {
+          setState(() {
+            _typingUser = typing;
+          });
+
+          Assist.log(
+              'The  state of the typing user for discussion ${widget.discussion.ref} has changed: $data');
+        } else {
+          Assist.log(
+              'The  state of the typing user for discussion ${widget.discussion.ref}  will be ignored since no ui is available');
+        }
+      }
     });
   }
 
@@ -249,11 +278,9 @@ class _DiscussionPageState extends State<DiscussionPage> {
           title: const Text('Message'),
           content: ListTile(
             title: const Text(
-              'Sent',
+              'User',
             ),
-            subtitle: Text(
-              message.createdAt.toString(),
-            ),
+            subtitle: Text(message.author.firstName ?? '(no name)'),
           ),
           actions: buttons,
         );
@@ -288,6 +315,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
       'id': twysheUser.phone,
       'lastname': null,
       'color': twysheUser.color,
+      'type': twysheUser.status
     };
 
     Map<String, dynamic> message = {
@@ -298,7 +326,7 @@ class _DiscussionPageState extends State<DiscussionPage> {
       'state': 1,
       'status': Status.sent.name,
       'type': type.name,
-      'sender': twysheUser.phone
+      'sender': twysheUser.phone,
     };
 
     if (type == MessageType.text) {
@@ -385,6 +413,10 @@ class _DiscussionPageState extends State<DiscussionPage> {
   ///Adds the message to the discussion on firestore
   void _removeDiscussionMessage(String id) async {
     FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreDiscussionPostsKey)
+        .collection(Assist.firestoreDiscussionPostsKey)
+        .doc(widget.discussion.ref)
         .collection(Assist.firestoreDiscussionPostsKey)
         .doc(id)
         .update(<String, dynamic>{
@@ -393,9 +425,13 @@ class _DiscussionPageState extends State<DiscussionPage> {
       Assist.log(
           'The message id \'$id\' has been successfully deleted from the discussion \'${widget.discussion.nickname}\'');
 
+      ///update count
       FirebaseFirestore.instance
+          .collection(Assist.firestoreAppCode)
+          .doc(Assist.firestoreDiscussionPostsKey)
           .collection(Assist.firestoreDiscussionPostsKey)
-          .where('discussion', isEqualTo: widget.discussion.ref)
+          .doc(widget.discussion.ref)
+          .collection(Assist.firestoreDiscussionPostsKey)
           .where('state', isEqualTo: Assist.messageStateActive)
           .count()
           .get()
@@ -405,6 +441,8 @@ class _DiscussionPageState extends State<DiscussionPage> {
         };
 
         FirebaseFirestore.instance
+            .collection(Assist.firestoreAppCode)
+            .doc(Assist.firestoreDiscussionsKey)
             .collection(Assist.firestoreDiscussionsKey)
             .doc(widget.discussion.ref)
             .update(newvalues)
@@ -426,6 +464,57 @@ class _DiscussionPageState extends State<DiscussionPage> {
     });
   }
 
+  void _startTyping() {
+    if (_startedTyping) {
+      Assist.log('The user is already typing  and request will be ignored');
+    } else {
+      _startedTyping = true;
+
+      Assist.log('The started typing');
+
+      updateDiscussionStatus(typing: twysheUser.nickname);
+
+      Future.delayed(const Duration(seconds: 8), () {
+        _startedTyping = false;
+
+        Assist.log('The user now finished typing');
+
+        updateDiscussionStatus(typing: '');
+      });
+    }
+  }
+
+  void updateDiscussionStatus({
+    required String typing,
+  }) {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreDiscussionsKey)
+        .collection(Assist.firestoreDiscussionsKey)
+        .doc(widget.discussion.ref)
+        .update({
+      'typing': typing,
+    }).then((resPost) {
+      Assist.log(
+          'The discussion \'${widget.discussion.ref}\' has been successfully updated to typing \'$typing\'');
+    }).onError((resError, stackTrace) {
+      Assist.log(
+          'Unable to update discussion \'${widget.discussion.ref}\' to typing \'$typing\' due to error: $resError');
+    });
+  }
+
+  String _getDiscussionDescrition() {
+    if (widget.discussion.ref == Assist.firestorePeerNavigatorDiscussionKey) {
+      return _typingUser == ""
+          ? 'Posts are anonymous'
+          : '$_typingUser is typing...';
+    } else {
+      return _typingUser == ""
+          ? widget.discussion.description
+          : '$_typingUser is typing...';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -436,8 +525,8 @@ class _DiscussionPageState extends State<DiscussionPage> {
                 color: Colors.white,
               ),
               maxLines: 1),
-          subtitle: const Text('Posts are anonymous',
-              style: TextStyle(color: Colors.white)),
+          subtitle: Text(_getDiscussionDescrition(),
+              style: const TextStyle(color: Colors.white)),
         ),
         actions: [
           IconButton(
@@ -483,11 +572,14 @@ class _DiscussionPageState extends State<DiscussionPage> {
             return const Center(child: Text('Something went wrong'));
           }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !_initialized) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
+
+          _initialized = true;
 
           _messages = snapshot.data!.docs
               .map((DocumentSnapshot document) {
@@ -510,6 +602,9 @@ class _DiscussionPageState extends State<DiscussionPage> {
             showUserAvatars: true,
             showUserNames: true,
             user: _user,
+            inputOptions: InputOptions(
+              onTextChanged: (text) => _startTyping(),
+            ),
           );
         },
       ),

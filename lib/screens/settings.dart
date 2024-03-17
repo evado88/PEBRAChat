@@ -18,6 +18,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
 
   String _color = '';
+  int _status = Assist.userParticipant;
 
   final TextEditingController _nicknameController = TextEditingController();
 
@@ -34,6 +35,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     _nicknameController.text = profile.nickname;
     _pinController.text = profile.pin;
+    _status = profile.status;
 
     setState(() {
       _color = profile.color;
@@ -42,7 +44,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _saveSettings() async {
     await Assist.saveProfile(
-        _pinController.text, _nicknameController.text, _color);
+        _pinController.text, _nicknameController.text, _color, _status);
 
     if (!mounted) {
       return;

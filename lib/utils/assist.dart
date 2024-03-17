@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart';
+import 'package:intl/intl.dart';
 import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,13 +29,13 @@ class Assist {
   static const defaultName = 'Peer Navigator';
 
   ///The active api URL of the app
-  static const apiUrl = 'http://nkoleevans.pythonanywhere.com';
+  static const apiUrl = 'https://nkoleevans.pythonanywhere.com';
 
   //The local URL for the api
-  static const localApiUrl = 'http://10.0.2.2:5000';
+  static const localApiUrl = 'http://10.0.2.2:3100';
 
   //The online  URL for the api
-  static const onlineApiUrl = 'http://nkoleevans.pythonanywhere.com';
+  static const onlineApiUrl = 'https://nkoleevans.pythonanywhere.com';
 
   ///The active file web URL of the app
   static const fileServerUrl = 'https://twyshe.app/files';
@@ -63,6 +64,9 @@ class Assist {
   ///The key used in preferences for a color
   static const colorKey = 'color';
 
+  ///The key used in preferences for a status
+  static const statusKey = 'status';
+
   ///The key used in preferences for a peer navigators nickname
   static const pnnicknamekey = 'pnnickname';
 
@@ -84,6 +88,13 @@ class Assist {
   ///The key used in firestore to store the chats for a conversation
   static const firestoreConversationChatsKey = 'twyshe-chats';
 
+  ///The key used in firestore to store the users
+  static const firestoreUsersKey = 'twyshe-users';
+
+  ///The key used in firestore to store the chat for peer navigators
+  static const firestorePeerNavigatorDiscussionKey =
+      'peer-navigator-discussion';
+
   ///The status of the message which is active
   static const messageStateActive = 1;
 
@@ -92,6 +103,12 @@ class Assist {
 
   ///The key for the FCM token
   static const String fcmTokenKey = 'fcmtoken';
+
+  ///The status of the participant
+  static const userParticipant = 3;
+
+  ///The status of the peer navigator
+  static const userPeer = 2;
 
   ///Checks if the specified phone number is for a registered user
   static bool isRegistered(String phoneNo) {
@@ -106,6 +123,51 @@ class Assist {
   static void log(String message) {
     if (kDebugMode) {
       print('$appName: $message');
+    }
+  }
+
+  static int getDateStatus(DateTime date) {
+    DateTime cleanDate = DateTime(date.year, date.month, date.day);
+
+    DateTime nowCurrent =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    DateTime nowYesterday = nowCurrent.add(const Duration(days: -1));
+
+    if (cleanDate == nowCurrent) {
+      return 0;
+    } else if (cleanDate == nowYesterday) {
+      return -1;
+    } else {
+      return 1;
+    }
+  }
+
+  static String getLastSeen(Timestamp? timestamp, bool never) {
+    if (never) {
+      return 'Never been online';
+    } else {
+      if (timestamp == null) {
+        return '';
+      } else {
+        DateTime date1 = timestamp.toDate();
+        DateTime date2 = DateTime.now();
+
+        int seconds = date2.difference(date1).inSeconds;
+
+        if (seconds <= 10) {
+          return 'Online';
+        } else {
+          int status = Assist.getDateStatus(date1);
+
+          if (status == 0) {
+            return "Today, ${DateFormat("HH:mm").format(date1.toLocal())}";
+          } else if (status == -1) {
+            return "Yesterday, ${DateFormat("HH:mm").format(date1.toLocal())}";
+          } else {
+            return DateFormat("d MMM yyy H:m").format(date1.toLocal());
+          }
+        }
+      }
     }
   }
 
@@ -148,10 +210,15 @@ class Assist {
     String currentPin = prefs.getString(Assist.pinKey) ?? '';
     String currentNickname = prefs.getString(Assist.nicknameKey) ?? '';
     String currentColor = prefs.getString(Assist.colorKey) ?? '';
-    String? currentPnPhone = prefs.getString(Assist.pnuserKey) ?? '';
+    int currentStatus =
+        prefs.getInt(Assist.statusKey) ?? Assist.userParticipant;
 
-    TwysheUser user = TwysheUser(currentPhone, currentNickname, currentColor,
-        currentPin, currentPnPhone);
+    TwysheUser user = TwysheUser(
+        phone: currentPhone,
+        nickname: currentNickname,
+        color: currentColor,
+        pin: currentPin,
+        status: currentStatus);
 
     return user;
   }
@@ -201,44 +268,59 @@ class Assist {
 
   ///Registers the specified user on the device
   static Future<bool> saveProfile(
-      String pin, String nickname, String color) async {
+      String pin, String nickname, String color, int status) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     String? initialPin = prefs.getString(Assist.pinKey);
     String? initialNickname = prefs.getString(Assist.nicknameKey);
     String? initialColor = prefs.getString(Assist.colorKey);
-
-    String? initialPnPhone = prefs.getString(Assist.pnuserKey);
-    String? initialPnNickname = prefs.getString(Assist.pnnicknamekey);
+    int? initialStatus = prefs.getInt(Assist.statusKey);
 
     await prefs.setString(Assist.pinKey, pin);
     await prefs.setString(Assist.nicknameKey, nickname);
     await prefs.setString(Assist.colorKey, color);
-
-    int rnd = Random().nextInt(7);
-
-    String pnPhone = '26097712300${rnd + 1}';
-
-    await prefs.setString(Assist.pnnicknamekey, 'mypn');
-    await prefs.setString(Assist.pnuserKey, pnPhone);
+    await prefs.setInt(Assist.statusKey, status);
 
     String? currentPin = prefs.getString(Assist.pinKey);
     String? currentNickname = prefs.getString(Assist.nicknameKey);
     String? currentColor = prefs.getString(Assist.colorKey);
-
-    String? currentPnPhone = prefs.getString(Assist.pnuserKey);
-    String? currentPnNickname = prefs.getString(Assist.pnnicknamekey);
+    int? currentStatus = prefs.getInt(Assist.statusKey);
 
     String initials =
-        'Nickname: $initialNickname, Color: $initialColor, PIN: $initialPin, PN-Nickname: $initialPnNickname, PN-Phone: $initialPnPhone';
+        'Nickname: $initialNickname, Color: $initialColor, PIN: $initialPin, Status: $initialStatus';
 
     String currents =
-        'Nickname: $currentNickname, Color: $currentColor, PIN: $currentPin, PN-Nickname: $currentPnNickname, PN-Phone: $currentPnPhone';
+        'Nickname: $currentNickname, Color: $currentColor, PIN: $currentPin, Status: $currentStatus';
 
     Assist.log(
         'The profile has been updated. Initial values; $initials, Currents: $currents');
 
     return true;
+  }
+
+  static void updateUserStatus({
+    required TwysheUser twysheUser,
+    required bool typing,
+  }) {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreUsersKey)
+        .collection(Assist.firestoreUsersKey)
+        .doc(twysheUser.phone)
+        .set({
+      'typing': typing,
+      'timestamp': Timestamp.now(),
+      'name': twysheUser.nickname,
+      'color': twysheUser.color,
+      'pin': twysheUser.pin,
+      'status': twysheUser.status
+    }).then((resPost) {
+      Assist.log(
+          'The user \'${twysheUser.phone}\' has been successfully updated to typing \'$typing\' and timestamp \'${Timestamp.now()}\'');
+    }).onError((resError, stackTrace) {
+      Assist.log(
+          'Unable to update the user \'${twysheUser.phone}\' to typing \'$typing\' and timestamp \'${Timestamp.now()}\': $resError');
+    });
   }
 
   static void updateChatMessageStatus(
@@ -285,8 +367,23 @@ class Assist {
     String userFirstName = data['author']['firstName'];
     String? userLastName = data['author']['lastName'];
 
-    User messageUser =
-        User(id: userId, firstName: userFirstName, lastName: userLastName);
+    String peerNavigator = '';
+
+    Map<String, dynamic> authorData = data['author'] as Map<String, dynamic>;
+
+    if (authorData.containsKey('type')) {
+      int type = authorData['type'];
+
+      if (type == Assist.userPeer) {
+        peerNavigator = ' [PN]';
+      }
+    }
+
+    User messageUser = User(
+      id: userId,
+      firstName: '$userFirstName$peerNavigator',
+      lastName: userLastName,
+    );
 
     //text message
     Timestamp messageCreatedAt = data['createdAt'];
@@ -369,7 +466,7 @@ class Assist {
         .doc(conversation.ref)
         .collection(Assist.firestoreConversationChatsKey)
         .where('status', isEqualTo: Status.sent.name)
-        .where('sender', isEqualTo: conversation.pnPhone)
+        .where('sender', isEqualTo: conversation.otherPhone)
         .count()
         .get()
         .then((resCount) {
@@ -379,25 +476,26 @@ class Assist {
           .collection(Assist.firestoreConversationsKey)
           .doc(twysheUser.phone)
           .collection(Assist.firestoreConversationsKey)
-          .doc(conversation.pnPhone)
+          .doc(conversation.otherPhone)
           .set(<String, dynamic>{
         'id': conversation.ref,
         'owner': twysheUser.phone,
         'color': twysheUser.color,
-        'other_phone': conversation.pnPhone,
-        'other_name': conversation.pnName,
+        'other_phone': conversation.otherPhone,
+        'other_name': conversation.otherName,
         'name': 'You',
         'count': resCount.count,
         'message': message,
         'posted': Timestamp.now(),
         'status': 1,
+        'typing': ''
         //'posts': 0,
       }).then((value) {
         Assist.log(
             'The conversation \'${conversation.ref}\' has been successfully updated!');
       }).onError((error, stackTrace) {
         Assist.log(
-            'Unable to update the conversation for user ${twysheUser.phone} and recipient ${conversation.pnPhone}: $error');
+            'Unable to update the conversation for user ${twysheUser.phone} and recipient ${conversation.otherPhone}: $error');
       });
     }).onError((errorCount, st) {
       Assist.log(
@@ -425,12 +523,12 @@ class Assist {
           .collection(Assist.firestoreAppCode)
           .doc(Assist.firestoreConversationsKey)
           .collection(Assist.firestoreConversationsKey)
-          .doc(conversation.pnPhone)
+          .doc(conversation.otherPhone)
           .collection(Assist.firestoreConversationsKey)
           .doc(twysheUser.phone)
           .set(<String, dynamic>{
         'id': conversation.ref,
-        'owner': conversation.pnPhone,
+        'owner': conversation.otherPhone,
         'color': twysheUser.color,
         'other_phone': twysheUser.phone,
         'other_name': twysheUser.nickname,
@@ -439,17 +537,42 @@ class Assist {
         'message': message,
         'posted': Timestamp.now(),
         'status': 1,
+        'typing': ''
         //'posts': 0,
       }).then((value) {
         Assist.log(
             'The conversation \'${conversation.ref}\' has been successfully updated!');
       }).onError((error, stackTrace) {
         Assist.log(
-            'Unable to update the conversation for user ${conversation.pnPhone} and sender ${twysheUser.phone}: $error');
+            'Unable to update the conversation for user ${conversation.otherPhone} and sender ${twysheUser.phone}: $error');
       });
     }).onError((errorCount, st) {
       Assist.log(
           'Error counting posts for the conversation \'${conversation.ref}\': $errorCount');
+    });
+  }
+
+  //update other conversation
+  static void updateOtherConversationStatus(
+      {required String typing,
+      required TwysheConversation conversation,
+      required TwysheUser twysheUser}) async {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationsKey)
+        .collection(Assist.firestoreConversationsKey)
+        .doc(conversation.otherPhone)
+        .collection(Assist.firestoreConversationsKey)
+        .doc(twysheUser.phone)
+        .update(<String, dynamic>{
+      'typing': typing,
+      //'posts': 0,
+    }).then((value) {
+      Assist.log(
+          'The conversation \'${conversation.ref}\' has been successfully updated!');
+    }).onError((error, stackTrace) {
+      Assist.log(
+          'Unable to update the conversation for user ${conversation.otherPhone} and sender ${twysheUser.phone}: $error');
     });
   }
 

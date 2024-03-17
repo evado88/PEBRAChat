@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async' show Future, StreamSubscription;
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
@@ -13,6 +13,7 @@ import 'package:twyshe/classes/upload_file.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:twyshe/classes/user_presence.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 import 'package:twyshe/utils/assist.dart';
@@ -32,6 +33,15 @@ class _ChatPageState extends State<ChatPage> {
 
   late final TwysheUser twysheUser;
   late final User _user;
+  late final StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      subscription;
+
+  bool _startedTyping = false;
+
+  TwysheUserPresence _presence = TwysheUserPresence(
+      name: '', timestamp: null, isTyping: false, never: false);
+
+  bool _initialized = false;
 
   @override
   void initState() {
@@ -43,7 +53,53 @@ class _ChatPageState extends State<ChatPage> {
   void _setUser() async {
     twysheUser = await Assist.getUserProfile();
 
+    Assist.updateUserStatus(twysheUser: twysheUser, typing: false);
+
     _user = types.User(id: twysheUser.phone, firstName: twysheUser.nickname);
+
+    subscription = FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreUsersKey)
+        .collection(Assist.firestoreUsersKey)
+        .doc(widget.conversation.otherPhone)
+        .snapshots()
+        .listen((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data =
+            documentSnapshot.data()! as Map<String, dynamic>;
+
+        String name = data['name'];
+        Timestamp time = data['timestamp'];
+        bool typing = data['typing'];
+
+        if (mounted) {
+          setState(() {
+            _presence = TwysheUserPresence(
+                name: name, timestamp: time, isTyping: typing, never: false);
+          });
+
+          Assist.log(
+              'The  state if the recipient user ${widget.conversation.otherPhone} has changed: $data');
+        } else {
+          Assist.log(
+              'The  state if the recipient user ${widget.conversation.otherPhone} will be ignored since no ui is available');
+        }
+      } else {
+        setState(() {
+          _presence = TwysheUserPresence(
+              name: '', timestamp: null, isTyping: false, never: true);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    subscription?.cancel();
+
+    Assist.log(
+        'The subscription to the recipient user ${widget.conversation.otherPhone} has been cancelled');
+    super.dispose();
   }
 
   void _handleAttachmentPressed() {
@@ -162,6 +218,41 @@ class _ChatPageState extends State<ChatPage> {
 
       await OpenFilex.open(localPath);
     }
+  }
+
+  void _handleMessageLongPress(BuildContext _, types.Message message) async {
+    List<Widget> buttons = [];
+
+    if (message.author.id == _user.id) {
+      buttons.add(
+        TextButton(
+          child: const Text('Delete'),
+          onPressed: () {
+            _removeChatMessage(message.id);
+
+            Assist.log('The message with id ${message.id} was deleted');
+
+            Navigator.pop(context);
+          },
+        ),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Message'),
+          content: ListTile(
+            title: const Text(
+              'User',
+            ),
+            subtitle: Text(message.author.firstName ?? '(no name)'),
+          ),
+          actions: buttons,
+        );
+      },
+    );
   }
 
   void _handlePreviewDataFetched(
@@ -288,10 +379,86 @@ class _ChatPageState extends State<ChatPage> {
           message: text,
           conversation: widget.conversation,
           twysheUser: twysheUser);
+
+      //send  notification
+      String notice;
+
+      if (type == MessageType.text) {
+        notice = text ?? '(no text)';
+      } else if (type == MessageType.image) {
+        notice = '(image)';
+      } else {
+        notice = '(file)';
+      }
+
+      TwysheAPI.sendDeviceMessage(
+          widget.conversation.otherPhone, twysheUser.nickname, notice);
     }).onError((resError, stackTrace) {
       Assist.showSnackBar(
           context, 'Unable to post message to conversation. Please try again');
       Assist.log('Unable to post message to the conversation: $resError');
+    });
+  }
+
+  void _startTyping() {
+    if (_startedTyping) {
+      Assist.log('The user is already typing  and request will be ignored');
+    } else {
+      _startedTyping = true;
+
+      Assist.log('The started typing');
+
+      Assist.updateUserStatus(twysheUser: twysheUser, typing: true);
+
+      Assist.updateOtherConversationStatus(
+          typing: twysheUser.nickname,
+          conversation: widget.conversation,
+          twysheUser: twysheUser);
+
+      Future.delayed(const Duration(seconds: 8), () {
+        _startedTyping = false;
+
+        Assist.log('The user now finished typing');
+
+        Assist.updateUserStatus(twysheUser: twysheUser, typing: false);
+
+        Assist.updateOtherConversationStatus(
+            typing: '',
+            conversation: widget.conversation,
+            twysheUser: twysheUser);
+      });
+    }
+  }
+
+  ///Adds the message to the discussion on firestore
+  void _removeChatMessage(String id) async {
+    FirebaseFirestore.instance
+        .collection(Assist.firestoreAppCode)
+        .doc(Assist.firestoreConversationChatsKey)
+        .collection(Assist.firestoreConversationChatsKey)
+        .doc(widget.conversation.ref)
+        .collection(Assist.firestoreConversationChatsKey)
+        .doc(id)
+        .update(<String, dynamic>{
+      'state': Assist.messageStateDeleted,
+    }).then((resPost) {
+      Assist.log(
+          'The message id \'$id\' has been successfully deleted from the chat \'${widget.conversation.ref}\'');
+
+/*
+      Assist.updateOwnConversation(
+          message: '(Deleted)',
+          conversation: widget.conversation,
+          twysheUser: twysheUser);
+
+      Assist.updateOtherConversation(
+          message: '(Deleted)',
+          conversation: widget.conversation,
+          twysheUser: twysheUser);*/
+    }).onError((resError, stackTrace) {
+      Assist.showSnackBar(
+          context, 'Unable to post message to discussion. Please try again');
+      Assist.log('Unable to post message to the discussion: $resError');
     });
   }
 
@@ -300,20 +467,17 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: ListTile(
-          title: Text(widget.conversation.pnName,
+          title: Text(
+              _presence.name.isEmpty
+                  ? widget.conversation.otherName
+                  : _presence.name,
               style: const TextStyle(color: Colors.white)),
-          subtitle: Text('${widget.conversation.pnPhone} - Last seen Today ',
+          subtitle: Text(
+              _presence.isTyping
+                  ? 'Typing...'
+                  : Assist.getLastSeen(_presence.timestamp, _presence.never),
               style: const TextStyle(color: Colors.white)),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            tooltip: 'Open shopping cart',
-            onPressed: () {
-              // handle the press
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -330,16 +494,22 @@ class _ChatPageState extends State<ChatPage> {
             return const Center(child: Text('Something went wrong'));
           }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !_initialized) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
 
+          _initialized = true;
+
           _messages = snapshot.data!.docs
               .map((DocumentSnapshot document) {
                 return Assist.getSnapShotMessage(
-                    document: document, chat: true, conversation: widget.conversation, twysheUser:  twysheUser);
+                    document: document,
+                    chat: true,
+                    conversation: widget.conversation,
+                    twysheUser: twysheUser);
               })
               .toList()
               .cast();
@@ -350,10 +520,13 @@ class _ChatPageState extends State<ChatPage> {
             onMessageTap: _handleMessageTap,
             onPreviewDataFetched: _handlePreviewDataFetched,
             onSendPressed: _handleSendPressed,
+            onMessageLongPress: _handleMessageLongPress,
             showUserAvatars: true,
             showUserNames: true,
-            onMessageLongPress: (context, p1) {},
             user: _user,
+            inputOptions: InputOptions(
+              onTextChanged: (text) => _startTyping(),
+            ),
           );
         },
       ),

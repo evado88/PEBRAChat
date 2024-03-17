@@ -1,37 +1,33 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:twyshe/classes/resource.dart';
+import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
-import 'package:twyshe/screens/resource.dart';
+import 'package:twyshe/screens/chat.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 import 'package:twyshe/utils/assist.dart';
 
-class ResourcesPage extends StatefulWidget {
-  final String title;
+class ParticipantsPage extends StatefulWidget {
+  final String peer;
 
-  const ResourcesPage({super.key, required this.title});
+  const ParticipantsPage({super.key, required this.peer});
 
   @override
-  State<ResourcesPage> createState() => _ResourcesPageState();
+  State<ParticipantsPage> createState() => _ParticipantsPageState();
 }
 
-class _ResourcesPageState extends State<ResourcesPage> {
-  List<TwysheResource> items = [];
+class _ParticipantsPageState extends State<ParticipantsPage> {
+  List<TwysheUser> items = [];
 
   bool loading = true;
   bool succeeded = false;
+
+  late final TwysheUser profile;
 
   @override
   void initState() {
     super.initState();
     _loadData();
-    _setUser();
-  }
-
-  void _setUser() async {
-    TwysheUser currentUser = await Assist.getUserProfile();
-
-    Assist.updateUserStatus(twysheUser: currentUser, typing: false);
   }
 
   void _loadData() async {
@@ -39,11 +35,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
       loading = true;
     });
 
-    TwysheTaskResult rs = await TwysheAPI.fetchTwysheResources();
+    profile = await Assist.getUserProfile();
+
+    TwysheTaskResult rs = await TwysheAPI.fetchPeerParticipants(widget.peer);
 
     if (rs.succeeded) {
       setState(() {
-        items = rs.items as List<TwysheResource>;
+        items = rs.items as List<TwysheUser>;
         succeeded = true;
         loading = false;
       });
@@ -53,6 +51,33 @@ class _ResourcesPageState extends State<ResourcesPage> {
         succeeded = false;
         loading = false;
       });
+    }
+  }
+
+  ///Adds a new discussion to firestore
+  void _startConversation(TwysheUser other) async {
+    String? conversationId = Assist.getCoversationId(profile.phone, other.phone);
+
+    if (conversationId == null) {
+      //same phone number
+      Assist.showSnackBar(context, 'Sorry! But you cannot chat with yourself!');
+    } else {
+      TwysheConversation conversation = TwysheConversation(
+          conversationId,
+          profile.phone,
+          profile.nickname,
+          other.phone,
+          Timestamp.now(),
+          1,
+          0,
+          other.color,
+          other.nickname,);
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ChatPage(conversation: conversation),
+        ),
+      );
     }
   }
 
@@ -91,25 +116,14 @@ class _ResourcesPageState extends State<ResourcesPage> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0)),
               child: ListTile(
-                title: Text(items[index].resourceName,
+                title: Text(items[index].nickname,
                     style: const TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 20,
                     )),
-                subtitle: Text(items[index].resourceDescription),
-                leading: CircleAvatar(
-                  radius: 40,
-                  backgroundImage:
-                      NetworkImage(items[index].resourceThumbnailUrl),
-                ),
+                subtitle: Text(items[index].phone),
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ResourcePage(resource: items[index]),
-                    ),
-                  );
+                  _startConversation(items[index]);
                 },
               ),
             );
@@ -124,6 +138,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Participants'),
+      ),
       body: _getView(),
       backgroundColor: Colors.purple,
     );

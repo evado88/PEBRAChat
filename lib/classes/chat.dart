@@ -13,9 +13,9 @@ final String otherPhone;
 final String owner; 
 final Timestamp posted;
 final int status;
-
+final String typing;
 
 ///Creates a new Chat
-TwysheChat(this.color, this.count,  this.id, this.message, this.name, this.otherName, this.otherPhone, this.owner, this.posted, this.status);
+TwysheChat(this.color, this.count,  this.id, this.message, this.name, this.otherName, this.otherPhone, this.owner, this.posted, this.status, this.typing);
 
 }

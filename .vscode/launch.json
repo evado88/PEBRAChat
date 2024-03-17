@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "PEBRAChat",
+            "name": "TwysheMessenger",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "PEBRAChat (profile mode)",
+            "name": "TwysheMessenger (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "PEBRAChat (release mode)",
+            "name": "TwysheMessenger (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
