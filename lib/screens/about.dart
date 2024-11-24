@@ -53,7 +53,7 @@ class _AboutPageState extends State<AboutPage> {
                 textAlign: TextAlign.center,
               ),
             ),
-            Text('Version 1.0',
+            Text('Version 1.1',
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

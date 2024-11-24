@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:twyshe/classes/converation.dart';
-import 'package:twyshe/classes/discussion.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/chat.dart';
-import 'package:twyshe/screens/discussion.dart';
 import 'package:twyshe/utils/assist.dart';
 
 class PeersPage extends StatefulWidget {
@@ -33,7 +30,7 @@ class _PeersPageState extends State<PeersPage> {
       .collection(Assist.firestoreAppCode)
       .doc(Assist.firestoreUsersKey)
       .collection(Assist.firestoreUsersKey)
-      .where('type', isEqualTo: Assist.userPeer)
+      .where('status', isEqualTo: Assist.userPeer)
       .orderBy('name', descending: false)
       .snapshots();
 
@@ -124,15 +121,18 @@ class _PeersPageState extends State<PeersPage> {
 
                   bool isTyping = data['typing'] as bool;
 
-                  if (data.containsKey('color')) {}
-                  if (data.containsKey('color')) {}
+                  String color = '';
+                  if (data.containsKey('color')) {
+                    color = data['color'];
+                  }
 
                   TwysheUser user = TwysheUser(
                       phone: ref,
                       nickname: nickname,
-                      color: Assist.defaultColor,
-                      pin: '1234',
-                      status: 1);
+                      color: color,
+                      pin: '',
+                      status: 1,
+                      email: '');
 
                   return Padding(
                       padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),

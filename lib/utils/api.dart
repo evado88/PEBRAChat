@@ -28,9 +28,20 @@ class TwysheAPI {
       final response =
           await client.get(Uri.parse('${Assist.apiUrl}/resource/list'));
 
-      // Use the compute function to run parseTwysheResources in a separate isolate.
+      //save the loaded data
+      await Assist.saveResourcesLocally(response.body);
 
+      // Use the compute function to run parseTwysheResources in a separate isolate.
       return parseTwysheResources(response.body);
+    } on SocketException catch (e) {
+      Assist.log(
+          'A socket exception has occured when loading resources from the server: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to load resources. Please make sure you have internet',
+          items: []);
     } on FormatException catch (e) {
       Assist.log(
           'A format exeception has occured when loading resources from the server: ${e.message}');
@@ -38,6 +49,33 @@ class TwysheAPI {
     } on Error catch (x) {
       Assist.log(
           'An error has occured when loading resources from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+    ///Fetches the reources locally
+  static Future<TwysheTaskResult> fetchLocalTwysheResources() async {
+    Assist.log('Loading local resources from the device');
+
+    try {
+      final response = await Assist.getLocalResources();
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+      if (response == null) {
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'There are currently no saved resources on the device',
+            items: []);
+      } else {
+        return parseTwysheResources(response);
+      }
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when loading resources from the device: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading resources from the device: ${x.toString()}');
       return TwysheTaskResult(
           succeeded: false, message: x.toString(), items: []);
     }
@@ -70,9 +108,20 @@ class TwysheAPI {
       final response =
           await client.get(Uri.parse('${Assist.apiUrl}/facility/list'));
 
-      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+      //save the loaded data
+      await Assist.saveFacilitiesLocally(response.body);
 
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
       return parseTwysheFacilitys(response.body);
+    } on SocketException catch (e) {
+      Assist.log(
+          'A socket exception has occured when loading facilities from the server: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to load facilities. Please make sure you have internet',
+          items: []);
     } on FormatException catch (e) {
       Assist.log(
           'A format exeception has occured when loading facilities from the server: ${e.message}');
@@ -80,6 +129,33 @@ class TwysheAPI {
     } on Error catch (x) {
       Assist.log(
           'An error has occured when loading facilities from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+  ///Fetches the facilities locally
+  static Future<TwysheTaskResult> fetchLocalTwysheFacilities() async {
+    Assist.log('Loading local facilities from the device');
+
+    try {
+      final response = await Assist.getLocalFacilities();
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+      if (response == null) {
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'There are currently no saved facilities on the device',
+            items: []);
+      } else {
+        return parseTwysheFacilitys(response);
+      }
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when loading facilities from the device: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading facilities from the device: ${x.toString()}');
       return TwysheTaskResult(
           succeeded: false, message: x.toString(), items: []);
     }
@@ -111,9 +187,19 @@ class TwysheAPI {
       final response =
           await client.get(Uri.parse('${Assist.apiUrl}/color/list'));
 
-      // Use the compute function to run parseTwysheColors in a separate isolate.
+      //save the loaded data
+      await Assist.saveColorsLocally(response.body);
 
+      // Use the compute function to run parseTwysheColors in a separate isolate.
       return parseTwysheColors(response.body);
+    } on SocketException catch (e) {
+      Assist.log(
+          'A socket exception has occured when loading colors from the server: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message: 'Unable to load colors. Please make sure you have internet',
+          items: []);
     } on FormatException catch (e) {
       Assist.log(
           'A format exeception has occured when loading colors from the server: ${e.message}');
@@ -121,6 +207,33 @@ class TwysheAPI {
     } on Error catch (x) {
       Assist.log(
           'An error has occured when loading colors from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+      ///Fetches the reources locally
+  static Future<TwysheTaskResult> fetchLocalTwysheColors() async {
+    Assist.log('Loading local colors from the device');
+
+    try {
+      final response = await Assist.getLocalColors();
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+      if (response == null) {
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'There are currently no saved colors on the device',
+            items: []);
+      } else {
+        return parseTwysheColors(response);
+      }
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when loading colors from the device: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading colors from the device: ${x.toString()}');
       return TwysheTaskResult(
           succeeded: false, message: x.toString(), items: []);
     }
@@ -153,9 +266,20 @@ class TwysheAPI {
       final response =
           await client.get(Uri.parse('${Assist.apiUrl}/country/list'));
 
-      // Use the compute function to run parseTwysheColors in a separate isolate.
+      //save the loaded data
+      await Assist.saveCountriesLocally(response.body);
 
+      // Use the compute function to run parseTwysheColors in a separate isolate.
       return parseTwysheCountries(response.body);
+    } on SocketException catch (e) {
+      Assist.log(
+          'A socket exception has occured when loading countries from the server: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to load countries. Please make sure you have internet',
+          items: []);
     } on FormatException catch (e) {
       Assist.log(
           'A format exeception has occured when loading countries from the server: ${e.message}');
@@ -163,6 +287,33 @@ class TwysheAPI {
     } on Error catch (x) {
       Assist.log(
           'An error has occured when loading countries from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+      ///Fetches the reources locally
+  static Future<TwysheTaskResult> fetchLocalTwysheCountries() async {
+    Assist.log('Loading local countries from the device');
+
+    try {
+      final response = await Assist.getLocalCountries();
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+      if (response == null) {
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'There are currently no saved countries on the device',
+            items: []);
+      } else {
+        return parseTwysheCountries(response);
+      }
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exeception has occured when loading countries from the device: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading countries from the device: ${x.toString()}');
       return TwysheTaskResult(
           succeeded: false, message: x.toString(), items: []);
     }
@@ -421,7 +572,7 @@ class TwysheAPI {
 
   ///Registers the current phone
   static Future<TwysheTaskResult> registerPhone(
-      String nickname, phone, pin, color) async {
+      String nickname, phone, pin, color, email) async {
     http.Client client = http.Client();
 
     Assist.log(
@@ -434,7 +585,8 @@ class TwysheAPI {
       'uname': nickname,
       'upin': pin,
       'utoken': token,
-      'ucolor': color
+      'ucolor': color,
+      'uemail': email
     };
 
     try {
@@ -498,7 +650,10 @@ class TwysheAPI {
       Assist.log(
           'An error has occured when loading peer from the server: ${x.toString()}');
       return TwysheTaskResult(
-          succeeded: false, message: 'Unable to complete phone registration due to error. Please try again', items: []);
+          succeeded: false,
+          message:
+              'Unable to complete phone registration due to error. Please try again',
+          items: []);
     }
   }
 
@@ -714,6 +869,68 @@ class TwysheAPI {
     } on Error catch (x) {
       Assist.log(
           'An error has occured when loading peer participants from the server: ${x.toString()}');
+      return TwysheTaskResult(
+          succeeded: false, message: x.toString(), items: []);
+    }
+  }
+
+  ///Fetches the resource from online
+  static Future<TwysheTaskResult> fetchPhone(String phone) async {
+    http.Client client = http.Client();
+
+    Assist.log(
+        'Loading the phone from the server: ${Assist.apiUrl}/phone/number/$phone');
+    try {
+      final response =
+          await client.get(Uri.parse('${Assist.apiUrl}/phone/number/$phone'));
+
+      // Use the compute function to run parseTwysheFacilitys in a separate isolate.
+
+      if (response.statusCode == 200) {
+        final parsed = jsonDecode(response.body);
+
+        if (parsed['succeeded']) {
+          TwysheUser user = TwysheUser.fromJson(parsed['items'][0]);
+
+          Assist.log(
+              'The phone have been successfully retrieved and is name ${user.nickname} and color ${user.color}');
+
+          return TwysheTaskResult(
+              succeeded: true, message: '', data: user, items: []);
+        } else {
+          Assist.log(
+              'The phone could not be retrieved and reason from server is ${parsed['message']}');
+
+          return TwysheTaskResult(
+              succeeded: false,
+              message: 'Unable to retrieve phone: ${parsed['message']}',
+              items: []);
+        }
+      } else {
+        Assist.log(
+            'The phone could not be retrived and status code is ${response.statusCode}');
+
+        return TwysheTaskResult(
+            succeeded: false,
+            message: 'Unable to retrieve phone due to server error',
+            items: []);
+      }
+    } on SocketException catch (e) {
+      Assist.log(
+          'Unable to retrieve phone due to a socket error: ${e.message}');
+
+      return TwysheTaskResult(
+          succeeded: false,
+          message:
+              'Unable to retrieve phone. Please make sure you have internet',
+          items: []);
+    } on FormatException catch (e) {
+      Assist.log(
+          'A format exception has occured when loading phone from the server: ${e.message}');
+      return TwysheTaskResult(succeeded: false, message: e.message, items: []);
+    } on Error catch (x) {
+      Assist.log(
+          'An error has occured when loading phone from the server: ${x.toString()}');
       return TwysheTaskResult(
           succeeded: false, message: x.toString(), items: []);
     }

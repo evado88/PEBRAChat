@@ -30,7 +30,25 @@ class _ColorPageState extends State<ColorPage> {
       loading = true;
     });
 
-    TwysheTaskResult rs = await TwysheAPI.fetchTwysheColors();
+    //load local first
+    TwysheTaskResult rs = await TwysheAPI.fetchLocalTwysheColors();
+    bool loadedLocally = false;
+
+    if (rs.succeeded) {
+      setState(() {
+        items = rs.items as List<TwysheColor>;
+        succeeded = true;
+        loading = false;
+      });
+
+      loadedLocally = true;
+    }
+
+    //finally load online
+    rs = await TwysheAPI.fetchTwysheColors();
+    if (!mounted) {
+      return;
+    }
 
     if (rs.succeeded) {
       setState(() {
@@ -39,11 +57,13 @@ class _ColorPageState extends State<ColorPage> {
         loading = false;
       });
     } else {
-      setState(() {
-        items = [];
-        succeeded = false;
-        loading = false;
-      });
+      if (!loadedLocally) {
+        setState(() {
+          items = [];
+          succeeded = false;
+          loading = false;
+        });
+      }
     }
   }
 
@@ -91,11 +111,12 @@ class _ColorPageState extends State<ColorPage> {
                 leading: CircleAvatar(
                   radius: 80,
                   backgroundColor: Assist.getHexColor(items[index].colorCode),
-                  child: Text(items[index].colorName.substring(0,2).toUpperCase(), 
-                  style: const TextStyle(color: Colors.white)),
+                  child: Text(
+                      items[index].colorName.substring(0, 2).toUpperCase(),
+                      style: const TextStyle(color: Colors.white)),
                 ),
                 onTap: () {
-                      Navigator.pop(context, items[index].colorCode);
+                  Navigator.pop(context, items[index].colorCode);
                 },
               ),
             );

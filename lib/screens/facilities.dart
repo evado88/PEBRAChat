@@ -30,7 +30,25 @@ class _FacilitiesPageState extends State<FacilitiesPage> {
       loading = true;
     });
 
-    TwysheTaskResult rs = await TwysheAPI.fetchTwysheFacilities();
+    //load local first
+    TwysheTaskResult rs = await TwysheAPI.fetchLocalTwysheFacilities();
+    bool loadedLocally = false;
+
+    if (rs.succeeded) {
+      setState(() {
+        items = rs.items as List<TwysheFacility>;
+        succeeded = true;
+        loading = false;
+      });
+
+      loadedLocally = true;
+    }
+
+    //finally load online
+    rs = await TwysheAPI.fetchTwysheFacilities();
+    if (!mounted) {
+      return;
+    }
 
     if (rs.succeeded) {
       setState(() {
@@ -39,11 +57,13 @@ class _FacilitiesPageState extends State<FacilitiesPage> {
         loading = false;
       });
     } else {
-      setState(() {
-        items = [];
-        succeeded = false;
-        loading = false;
-      });
+      if (!loadedLocally) {
+        setState(() {
+          items = [];
+          succeeded = false;
+          loading = false;
+        });
+      }
     }
   }
 
@@ -93,7 +113,7 @@ class _FacilitiesPageState extends State<FacilitiesPage> {
                   image: NetworkImage(items[index].facilityThumbnailUrl),
                 ),
                 onTap: () {
-                     Navigator.push(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) =>

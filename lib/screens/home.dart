@@ -42,35 +42,38 @@ class _HomePageState extends State<HomePage> {
   final FacilitiesPage _facilitiesPage =
       const FacilitiesPage(title: 'Facilities');
 
-  late final ConversationsPage _conversationsPage;
-
   String nickname = '';
   String phone = '';
   String color = '';
+  String email = '';
 
   String pnPhone = '';
   String pnColor = Assist.defaultColor;
   String pnName = Assist.defaultName;
+  late final TwysheUser profile;
 
   @override
   void initState() {
     super.initState();
-    _setUserData();
-
-    _conversationsPage = ConversationsPage(
-      title: 'Conversations',
-      user: widget.user,
-    );
+    _setUserData(updateMenu: true);
   }
 
-  void _setUserData() async {
-    TwysheUser profile = await Assist.getUserProfile();
+  void _setUserData({required bool updateMenu}) async {
+    profile = await Assist.getUserProfile();
 
     setState(() {
       nickname = profile.nickname;
       phone = profile.phone;
       color = profile.color;
+      email = profile.email ?? '';
     });
+
+    if (!updateMenu) {
+      setState(() {
+        items = items;
+      });
+      return;
+    }
 
     var userMenu = [
       TwysheMenu(
@@ -95,11 +98,6 @@ class _HomePageState extends State<HomePage> {
           title: 'Phone',
           icon: Icons.phone),
       TwysheMenu(
-          name: 'facilities',
-          description: 'View facilities providing SRH services',
-          title: 'Facilities',
-          icon: Icons.local_hospital),
-      TwysheMenu(
           name: 'map',
           description: 'View a map for facilities',
           title: 'Map',
@@ -113,7 +111,7 @@ class _HomePageState extends State<HomePage> {
           name: 'about',
           description: 'See version information about this app',
           title: 'About',
-          icon: Icons.help),
+          icon: Icons.info),
       TwysheMenu(
           name: 'logout',
           description: 'Remove your account from this device',
@@ -125,73 +123,96 @@ class _HomePageState extends State<HomePage> {
       items.addAll(userMenu);
     });
 
-    _performHandshake(profile.phone);
+    if (profile.status == Assist.userParticipant) {
+      //if user is participant, check if the peer settings are set here
+      TwysheUser? peerProfile = await Assist.getUserPeer();
 
+      if (peerProfile != null) {
+        addMoreOptions(false);
+
+        items.insert(
+          0,
+          TwysheMenu(
+              name: 'peer',
+              description: 'Chat with your Peer Navigator',
+              title: 'My Peer Navigator - ${peerProfile.nickname}',
+              icon: Icons.supervised_user_circle,
+              tag: peerProfile),
+        );
+
+        setState(() {
+          items = items;
+          pnPhone = peerProfile.phone;
+          pnName = peerProfile.nickname;
+        });
+      } else {
+        _loadPeerNavigator();
+      }
+    } else if (profile.status == Assist.userPeer) {
+      //once the user is found to be peer then all is good. use local settings
+      //handshake will reset user incase they re stop being a peer
+      //ensure the participants menu is loaded only once
+      if (items[0].name != 'participants') {
+        addMoreOptions(true);
+      }
+    }
+
+    //mark this user as online
     Assist.updateUserStatus(twysheUser: profile, typing: false);
+
+    //greet the server
+    Assist.performHandshake(profile.phone);
   }
 
-  void _performHandshake(String currentPhone) async {
-    TwysheTaskResult rs = await TwysheAPI.performHandshake(currentPhone);
+  void addMoreOptions(bool isPeer) {
+    items.insert(
+      0,
+      TwysheMenu(
+          name: 'discussions',
+          description: 'View and start discussion chats',
+          title: 'Discussions',
+          icon: Icons.people_alt),
+    );
 
-    if (rs.succeeded) {
-      TwysheUser current = rs.data as TwysheUser;
+    items.insert(
+      0,
+      TwysheMenu(
+          name: 'conversations',
+          description: 'View your chats with peers and participants',
+          title: 'Conversations',
+          icon: Icons.messenger_outline_sharp),
+    );
 
-      if (current.status == Assist.userParticipant) {
-        _loadPeerNavigator();
-      } else if (current.status == Assist.userPeer) {
-        //ensure the participants menu is loaded only once
-        if (items[0].name != 'participants') {
-          items.insert(
-            0,
-            TwysheMenu(
-                name: 'discussions',
-                description: 'View and start discussion chats',
-                title: 'Discussions',
-                icon: Icons.people_alt),
-          );
-
-          items.insert(
-            0,
-            TwysheMenu(
-                name: 'conversations',
-                description: 'View your chats with peers and participants',
-                title: 'Conversations',
-                icon: Icons.messenger_outline_sharp),
-          );
-          items.insert(
-            0,
-            TwysheMenu(
-                name: 'peers',
-                description: 'View and chat with other peer navigators',
-                title: 'Peer Navigators',
-                icon: Icons.personal_injury_rounded),
-          );
-          items.insert(
-            0,
-            TwysheMenu(
-                name: 'peer-discussion',
-                description: 'Discussion for all peer navigators',
-                title: 'Peer Navigator Chat',
-                icon: Icons.comment_outlined),
-          );
-          items.insert(
-            0,
-            TwysheMenu(
-                name: 'participants',
-                description: 'View your participants',
-                title: 'Participants',
-                icon: Icons.person_outline_rounded),
-          );
-
-          setState(() {
-            items = items;
-          });
-        }
-      }
-
-      Assist.saveProfile(
-          current.pin, current.nickname, current.color, current.status);
+    if (isPeer) {
+      items.insert(
+        0,
+        TwysheMenu(
+            name: 'peers',
+            description: 'View and chat with other peer navigators',
+            title: 'Peer Navigators',
+            icon: Icons.personal_injury_rounded),
+      );
+      items.insert(
+        0,
+        TwysheMenu(
+            name: 'peer-discussion',
+            description: 'Discussion for all peer navigators',
+            title: 'Peer Navigator Chat',
+            icon: Icons.comment_outlined),
+      );
+      items.insert(
+        0,
+        TwysheMenu(
+            name: 'participants',
+            description: 'View your participants',
+            title: 'Participants',
+            icon: Icons.person_outline_rounded),
+      );
     }
+
+    setState(() {
+      items = items;
+    });
   }
 
   void _loadPeerNavigator() async {
@@ -201,6 +222,9 @@ class _HomePageState extends State<HomePage> {
 
       if (rs.succeeded) {
         TwysheUser peer = rs.data as TwysheUser;
+
+        addMoreOptions(false);
+
         items.insert(
           0,
           TwysheMenu(
@@ -216,6 +240,9 @@ class _HomePageState extends State<HomePage> {
           pnPhone = peer.phone;
           pnName = peer.nickname;
         });
+
+        ///Save this peer for offline use next time
+        Assist.registerUserPeer(peer);
       }
     }
   }
@@ -263,7 +290,7 @@ class _HomePageState extends State<HomePage> {
               )),
     );
 
-    _setUserData();
+    _setUserData(updateMenu: false);
   }
 
   String _getTitle(String title) {
@@ -290,7 +317,9 @@ class _HomePageState extends State<HomePage> {
           subtitle: Text(items[index].description),
           leading: Icon(
             items[index].icon,
-            color: items[index].color ?? Colors.purple,
+            color: items[index].name == 'color'
+                ? Assist.getHexColor(color)
+                : Colors.purple,
             size: 48,
           ),
           onTap: () {
@@ -316,12 +345,7 @@ class _HomePageState extends State<HomePage> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => PeersPage(
-                    twysheUser: TwysheUser(
-                        color: color,
-                        nickname: nickname,
-                        phone: phone,
-                        pin: '',
-                        status: Assist.messageStateActive),
+                    twysheUser: profile,
                   ),
                 ),
               );
@@ -332,14 +356,6 @@ class _HomePageState extends State<HomePage> {
                 items[index].name == 'color' ||
                 items[index].name == 'pin') {
               _showUpdateProfile();
-            } else if (items[index].name == 'facilities') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const FacilitiesPage(title: 'Facilities'),
-                ),
-              );
             } else if (items[index].name == 'participants') {
               Navigator.push(
                 context,
@@ -358,17 +374,21 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>  ConversationsPage(title: 'Conversations', user: phone,),
+                  builder: (context) => ConversationsPage(
+                    title: 'Conversations',
+                    user: phone,
+                  ),
                 ),
               );
-            }else if (items[index].name == 'discussions') {
+            } else if (items[index].name == 'discussions') {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const DiscussionsPage(title: 'Discussions'),
+                  builder: (context) =>
+                      const DiscussionsPage(title: 'Discussions'),
                 ),
               );
-            }else if (items[index].name == 'help') {
+            } else if (items[index].name == 'help') {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -449,6 +469,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _onItemTapped(int index) {}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -475,6 +497,53 @@ class _HomePageState extends State<HomePage> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.purple,
         onTap: _onBottomNavigationItemTapped,
+      ),
+      drawer: Drawer(
+        // Add a ListView to the drawer. This ensures the user can scroll
+        // through the options in the drawer if there isn't enough vertical
+        // space to fit everything.
+        child: ListView(
+          // Important: Remove any padding from the ListView.
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text('Drawer Header'),
+            ),
+            ListTile(
+              title: const Text('Home'),
+              selected: _selectedIndex == 0,
+              onTap: () {
+                // Update the state of the app
+                _onItemTapped(0);
+                // Then close the drawer
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Business'),
+              selected: _selectedIndex == 1,
+              onTap: () {
+                // Update the state of the app
+                _onItemTapped(1);
+                // Then close the drawer
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('School'),
+              selected: _selectedIndex == 2,
+              onTap: () {
+                // Update the state of the app
+                _onItemTapped(2);
+                // Then close the drawer
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

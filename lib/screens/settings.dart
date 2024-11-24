@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/colors.dart';
+import 'package:twyshe/screens/task_result.dart';
+import 'package:twyshe/utils/api.dart';
 import 'package:twyshe/utils/assist.dart';
 
 ///Handles profile chanegs by the user
@@ -18,7 +20,14 @@ class _SettingsPageState extends State<SettingsPage> {
   final _formKey = GlobalKey<FormState>();
 
   String _color = '';
+
   int _status = Assist.userParticipant;
+
+  String phone = '';
+
+  bool _isLoading = false;
+
+  final TextEditingController _emailController = TextEditingController();
 
   final TextEditingController _nicknameController = TextEditingController();
 
@@ -33,9 +42,11 @@ class _SettingsPageState extends State<SettingsPage> {
   void _setUser() async {
     TwysheUser profile = await Assist.getUserProfile();
 
+    phone = profile.phone;
     _nicknameController.text = profile.nickname;
     _pinController.text = profile.pin;
     _status = profile.status;
+    _emailController.text = profile.email ?? '';
 
     setState(() {
       _color = profile.color;
@@ -43,8 +54,30 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _saveSettings() async {
-    await Assist.saveProfile(
-        _pinController.text, _nicknameController.text, _color, _status);
+    setState(() {
+      _isLoading = true;
+    });
+
+    TwysheTaskResult rs = await TwysheAPI.registerPhone(
+        _nicknameController.text,
+        phone,
+        _pinController.text,
+        _color,
+        _emailController.text);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (!rs.succeeded) {
+      if (mounted) {
+        Assist.showSnackBar(context, rs.message);
+      }
+    } else {
+      //Save the profile settings
+      await Assist.saveProfile(_pinController.text, _nicknameController.text,
+          _color, _status, _emailController.text);
+    }
 
     if (!mounted) {
       return;
@@ -137,6 +170,26 @@ class _SettingsPageState extends State<SettingsPage> {
                         return null;
                       },
                     ),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                      ),
+                      textInputAction: TextInputAction.done,
+                      keyboardType: TextInputType.text,
+                      // The validator receives the text that the user has entered.
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter an email address';
+                        } else {
+                          if (!Assist.isEmailAddressValid(value)) {
+                            return 'Please enter a valid email address';
+                          }
+                        }
+
+                        return null;
+                      },
+                    ),
                     ListTile(
                       title: const Text('My Color',
                           style: TextStyle(
@@ -176,7 +229,14 @@ class _SettingsPageState extends State<SettingsPage> {
                             _saveSettings();
                           }
                         },
-                        child: const Text('SAVE PROFILE'),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 30,
+                                width: 30,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 3, color: Colors.white),
+                              )
+                            : const Text('SAVE PROFILE'),
                       ),
                     ),
                   ],

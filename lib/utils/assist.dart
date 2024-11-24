@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:twyshe/classes/converation.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:twyshe/screens/task_result.dart';
+import 'package:twyshe/utils/api.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 ///Contains common properties and methods for the entire application
@@ -55,6 +57,12 @@ class Assist {
   ///The key used in preferences for a user
   static const userKey = 'phone';
 
+  ///The key used in preferences for a user peer
+  static const peerPhoneKey = 'peerPhone';
+
+  ///The key used in preferences for a peer nickname
+  static const peerNicknameKey = 'peerNickname';
+
   ///The key used in preferences for a pin
   static const pinKey = 'pin';
 
@@ -63,6 +71,9 @@ class Assist {
 
   ///The key used in preferences for a color
   static const colorKey = 'color';
+
+  ///The key used in preferences for email
+  static const emailKey = 'email';
 
   ///The key used in preferences for a status
   static const statusKey = 'status';
@@ -109,6 +120,18 @@ class Assist {
 
   ///The status of the peer navigator
   static const userPeer = 2;
+
+  ///The key for the facilities
+  static const String facilityKey = 'facilityKey';
+
+  ///The key for the resources
+  static const String resourceKey = 'resourceKey';
+
+  ///The key for the colors
+  static const String colorDataKey = 'colorDataKey';
+
+  ///The key for the countries
+  static const String countryKey = 'countryKey';
 
   ///Checks if the specified phone number is for a registered user
   static bool isRegistered(String phoneNo) {
@@ -212,15 +235,57 @@ class Assist {
     String currentColor = prefs.getString(Assist.colorKey) ?? '';
     int currentStatus =
         prefs.getInt(Assist.statusKey) ?? Assist.userParticipant;
+    String currentEmail = prefs.getString(Assist.emailKey) ?? '';
 
     TwysheUser user = TwysheUser(
         phone: currentPhone,
         nickname: currentNickname,
         color: currentColor,
         pin: currentPin,
-        status: currentStatus);
+        status: currentStatus,
+        email: currentEmail);
 
     return user;
+  }
+
+  ///Gets the currently registered peer for this participant  on the device
+  static Future<TwysheUser?> getUserPeer() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String currentPhone =
+        prefs.getString(Assist.peerPhoneKey) ?? Assist.unregisteredPhone;
+
+    String currentNickname = prefs.getString(Assist.peerNicknameKey) ?? '';
+
+    if (currentPhone != Assist.unregisteredPhone) {
+      return TwysheUser(
+          phone: currentPhone,
+          nickname: currentNickname,
+          color: '',
+          pin: '',
+          status: Assist.userPeer,
+          email: '');
+    } else {
+      return null;
+    }
+  }
+
+  ///Registers the specified user peer on the device
+  static void registerUserPeer(TwysheUser twysheUser) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? initialPhone = prefs.getString(Assist.peerPhoneKey);
+    String? initialNickname = prefs.getString(Assist.peerNicknameKey);
+
+    // Save an integer value to 'counter' key.
+    await prefs.setString(Assist.peerPhoneKey, twysheUser.phone);
+    await prefs.setString(Assist.peerNicknameKey, twysheUser.nickname);
+
+    String? currentPhone = prefs.getString(Assist.peerPhoneKey);
+    String? currentNickname = prefs.getString(Assist.peerNicknameKey);
+
+    Assist.log(
+        'Peer for user registered. Phone was \'$initialPhone\' and is now \'$currentPhone\', nickname was \'$initialNickname\' and is now \'$currentNickname\'');
   }
 
   ///Registers the specified user on the device
@@ -236,6 +301,127 @@ class Assist {
 
     Assist.log(
         'The user has been registered on the device. Initial state was \'$initialPhone\' and is now \'$currentPhone\'');
+  }
+
+  ///Saves the resources so that they can be accessed without internet
+  static Future<void> saveResourcesLocally(String resources) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? initialValue = prefs.getString(Assist.resourceKey);
+
+    await prefs.setString(Assist.resourceKey, resources);
+
+    String? currentValue = prefs.getString(Assist.resourceKey);
+
+    String initial = initialValue == null ? '' : initialValue.substring(0, 10);
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log(
+        'The resources have been saved. Initial state was \'$initial\' and is now \'$current\'');
+  }
+
+  ///Saves the facilities so that they can be accessed without internet
+  static Future<void> saveFacilitiesLocally(String facilities) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? initialValue = prefs.getString(Assist.facilityKey);
+
+    await prefs.setString(Assist.facilityKey, facilities);
+
+    String? currentValue = prefs.getString(Assist.facilityKey);
+
+    String initial = initialValue == null ? '' : initialValue.substring(0, 10);
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log(
+        'The facilities have been saved. Initial state was \'$initial\' and is now \'$current\'');
+  }
+
+  ///Saves the colors so that they can be accessed without internet
+  static Future<void> saveColorsLocally(String colors) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? initialValue = prefs.getString(Assist.colorDataKey);
+
+    await prefs.setString(Assist.colorDataKey, colors);
+
+    String? currentValue = prefs.getString(Assist.colorDataKey);
+
+    String initial = initialValue == null ? '' : initialValue.substring(0, 10);
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log(
+        'The colors have been saved. Initial state was \'$initial\' and is now \'$current\'');
+  }
+
+    ///Saves the countries so that they can be accessed without internet
+  static Future<void> saveCountriesLocally(String countries) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? initialValue = prefs.getString(Assist.countryKey);
+
+    await prefs.setString(Assist.countryKey, countries);
+
+    String? currentValue = prefs.getString(Assist.countryKey);
+
+    String initial = initialValue == null ? '' : initialValue.substring(0, 10);
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log(
+        'The countries have been saved. Initial state was \'$initial\' and is now \'$current\'');
+  }
+
+  ///Gets the currently saved local facilities on the device
+  static Future<String?> getLocalFacilities() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? currentValue = prefs.getString(Assist.facilityKey);
+
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log('The currently saved facilities on the device is \'$current\'');
+
+    return currentValue;
+  }
+
+  ///Gets the currently saved local resources on the device
+  static Future<String?> getLocalResources() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? currentValue = prefs.getString(Assist.resourceKey);
+
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log('The currently saved resources on the device is \'$current\'');
+
+    return currentValue;
+  }
+
+
+   ///Gets the currently saved local colors on the device
+  static Future<String?> getLocalColors() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? currentValue = prefs.getString(Assist.colorDataKey);
+
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log('The currently saved colors on the device is \'$current\'');
+
+    return currentValue;
+  }
+
+   ///Gets the currently saved local countries on the device
+  static Future<String?> getLocalCountries() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? currentValue = prefs.getString(Assist.countryKey);
+
+    String current = currentValue == null ? '' : currentValue.substring(0, 10);
+
+    Assist.log('The currently saved countries on the device is \'$current\'');
+
+    return currentValue;
   }
 
   ///Saves the FCM token on the device
@@ -267,30 +453,33 @@ class Assist {
   }
 
   ///Registers the specified user on the device
-  static Future<bool> saveProfile(
-      String pin, String nickname, String color, int status) async {
+  static Future<bool> saveProfile(String pin, String nickname, String color,
+      int status, String? email) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     String? initialPin = prefs.getString(Assist.pinKey);
     String? initialNickname = prefs.getString(Assist.nicknameKey);
     String? initialColor = prefs.getString(Assist.colorKey);
     int? initialStatus = prefs.getInt(Assist.statusKey);
+    String? initialEmail = prefs.getString(Assist.emailKey);
 
     await prefs.setString(Assist.pinKey, pin);
     await prefs.setString(Assist.nicknameKey, nickname);
     await prefs.setString(Assist.colorKey, color);
     await prefs.setInt(Assist.statusKey, status);
+    await prefs.setString(Assist.emailKey, email ?? '');
 
     String? currentPin = prefs.getString(Assist.pinKey);
     String? currentNickname = prefs.getString(Assist.nicknameKey);
     String? currentColor = prefs.getString(Assist.colorKey);
     int? currentStatus = prefs.getInt(Assist.statusKey);
+    String? currentEmail = prefs.getString(Assist.emailKey);
 
     String initials =
-        'Nickname: $initialNickname, Color: $initialColor, PIN: $initialPin, Status: $initialStatus';
+        'Nickname: $initialNickname, Color: $initialColor, PIN: $initialPin, Status: $initialStatus, Email: $initialEmail';
 
     String currents =
-        'Nickname: $currentNickname, Color: $currentColor, PIN: $currentPin, Status: $currentStatus';
+        'Nickname: $currentNickname, Color: $currentColor, PIN: $currentPin, Status: $currentStatus, Email: $currentEmail';
 
     Assist.log(
         'The profile has been updated. Initial values; $initials, Currents: $currents');
@@ -298,6 +487,18 @@ class Assist {
     return true;
   }
 
+  ///Performs an handshake with the server
+  static void performHandshake(String currentPhone) async {
+    TwysheTaskResult rs = await TwysheAPI.performHandshake(currentPhone);
+
+    if (rs.succeeded) {
+      TwysheUser current = rs.data as TwysheUser;
+      Assist.saveProfile(current.pin, current.nickname, current.color,
+          current.status, current.email);
+    }
+  }
+
+  /// Updates the status of this user on the firebase cloudfirestore database
   static void updateUserStatus({
     required TwysheUser twysheUser,
     required bool typing,
@@ -321,6 +522,12 @@ class Assist {
       Assist.log(
           'Unable to update the user \'${twysheUser.phone}\' to typing \'$typing\' and timestamp \'${Timestamp.now()}\': $resError');
     });
+  }
+
+  static bool isEmailAddressValid(String emailAddress) {
+    return RegExp(
+            r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+        .hasMatch(emailAddress);
   }
 
   static void updateChatMessageStatus(
@@ -615,24 +822,36 @@ class Assist {
   static void subscribeTopic(String topic) {
     Assist.log('Subscribing to the topic $topic');
 
-    FirebaseMessaging.instance
-        .subscribeToTopic(topic)
-        .then((value) =>
-            Assist.log('Successfully subscribed to the topic $topic'))
-        .onError((error, stackTrace) =>
-            Assist.log('Unable to subscribe to the topic $topic: $error'));
+    try {
+      FirebaseMessaging.instance
+          .subscribeToTopic(topic)
+          .then((value) =>
+              Assist.log('Successfully subscribed to the topic $topic'))
+          .onError((error, stackTrace) =>
+              Assist.log('Unable to subscribe to the topic $topic: $error'));
+    } on FirebaseException catch (err) {
+      // do nothing
+      Assist.log(
+          'A firebase exception occured on subscribe to topic $topic: $err');
+    }
   }
 
   ///Unsubscribes to the specified topic
   static void unsubscribeTopic(String topic) {
     Assist.log('Unsubscribing from the topic $topic');
 
-    FirebaseMessaging.instance
-        .unsubscribeFromTopic(topic)
-        .then((value) =>
-            Assist.log('Successfully unsubscribed to the topic $topic'))
-        .onError((error, stackTrace) =>
-            Assist.log('Unable to unsubscribe to the topic $topic: $error'));
+    try {
+      FirebaseMessaging.instance
+          .unsubscribeFromTopic(topic)
+          .then((value) =>
+              Assist.log('Successfully unsubscribed to the topic $topic'))
+          .onError((error, stackTrace) =>
+              Assist.log('Unable to unsubscribe to the topic $topic: $error'));
+    } on FirebaseException catch (err) {
+      // do nothing
+      Assist.log(
+          'A firebase exception occured on unsubscribe to topic $topic: $err');
+    }
   }
 
   ///Opens the specified link as a web link

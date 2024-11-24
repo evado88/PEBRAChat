@@ -5,6 +5,7 @@ class TwysheUser {
   final String color;
   final String pin;
   final int status;
+  final String? email;
 
   ///Creates a new user with the specified phone, nickname, color and pin
   TwysheUser(
@@ -12,7 +13,8 @@ class TwysheUser {
       required this.nickname,
       required this.color,
       required this.pin,
-      required this.status});
+      required this.status,
+      required this.email});
 
   factory TwysheUser.fromJson(Map<String, dynamic> json) {
     return TwysheUser(
@@ -20,7 +22,8 @@ class TwysheUser {
       nickname: json['phone_name'] as String,
       color: json['phone_color'] as String,
       pin: json['phone_pin'] as String,
-      status:  json['phone_status'] as int
+      status:  json['phone_status'] as int,
+      email: json['phone_email'] ?? '',
     );
   }
 }

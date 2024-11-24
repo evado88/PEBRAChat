@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:twyshe/classes/resource.dart';
 import 'package:twyshe/classes/user.dart';
 import 'package:twyshe/screens/resource.dart';
+import 'package:twyshe/screens/resource_interactive.dart';
 import 'package:twyshe/screens/task_result.dart';
 import 'package:twyshe/utils/api.dart';
 import 'package:twyshe/utils/assist.dart';
@@ -39,7 +40,25 @@ class _ResourcesPageState extends State<ResourcesPage> {
       loading = true;
     });
 
-    TwysheTaskResult rs = await TwysheAPI.fetchTwysheResources();
+    //load local first
+    TwysheTaskResult rs = await TwysheAPI.fetchLocalTwysheResources();
+    bool loadedLocally = false;
+
+    if (rs.succeeded) {
+      setState(() {
+        items = rs.items as List<TwysheResource>;
+        succeeded = true;
+        loading = false;
+      });
+
+      loadedLocally = true;
+    }
+
+    //finally load online
+    rs = await TwysheAPI.fetchTwysheResources();
+    if (!mounted) {
+      return;
+    }
 
     if (rs.succeeded) {
       setState(() {
@@ -48,11 +67,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
         loading = false;
       });
     } else {
-      setState(() {
-        items = [];
-        succeeded = false;
-        loading = false;
-      });
+      if (!loadedLocally) {
+        setState(() {
+          items = [];
+          succeeded = false;
+          loading = false;
+        });
+      }
     }
   }
 
@@ -106,8 +127,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          ResourcePage(resource: items[index]),
+                      builder: (context) => items[index].resourceType == 1
+                          ? ResourcePage(resource: items[index])
+                          : ResourceInteractivePage(resource: items[index]),
                     ),
                   );
                 },

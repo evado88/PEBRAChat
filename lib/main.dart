@@ -26,7 +26,16 @@ void main() async {
     sound: true,
   );
 
-  String? fcmToken = await FirebaseMessaging.instance.getToken();
+
+  String? fcmToken;
+
+   try {
+    fcmToken = await FirebaseMessaging.instance.getToken();
+    } on FirebaseException catch (err) {
+      // do nothing
+      Assist.log(
+          'A firebase exception occured on get token: $err');
+    }
 
   ///subscribe to all app wide notifications
   Assist.subscribeTopic(Assist.appCode);

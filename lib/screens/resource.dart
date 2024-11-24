@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:twyshe/classes/resource.dart';
 import 'package:twyshe/utils/assist.dart';
+import 'package:accordion/accordion.dart';
+import 'package:accordion/controllers.dart';
 
 class ResourcePage extends StatefulWidget {
   final TwysheResource resource;
@@ -24,10 +26,8 @@ class _ResourcePageState extends State<ResourcePage> {
       onTap: () {
         Assist.log('The resource item has been tapped at $index');
 
-         if (index == 3) {
-
+        if (index == 3) {
           Assist.openWebLink(context, widget.resource.resourceUrl);
-
         }
       },
     );

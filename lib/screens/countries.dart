@@ -29,7 +29,25 @@ class _CountryPageState extends State<CountryPage> {
       loading = true;
     });
 
-    TwysheTaskResult rs = await TwysheAPI.fetchTwysheCountries();
+    //load local first
+    TwysheTaskResult rs = await TwysheAPI.fetchLocalTwysheCountries();
+    bool loadedLocally = false;
+
+    if (rs.succeeded) {
+      setState(() {
+        items = rs.items as List<TwysheCountry>;
+        succeeded = true;
+        loading = false;
+      });
+
+      loadedLocally = true;
+    }
+
+    //finally load online
+    rs = await TwysheAPI.fetchTwysheCountries();
+    if (!mounted) {
+      return;
+    }
 
     if (rs.succeeded) {
       setState(() {
@@ -38,11 +56,13 @@ class _CountryPageState extends State<CountryPage> {
         loading = false;
       });
     } else {
-      setState(() {
-        items = [];
-        succeeded = false;
-        loading = false;
-      });
+      if (!loadedLocally) {
+        setState(() {
+          items = [];
+          succeeded = false;
+          loading = false;
+        });
+      }
     }
   }
 
